@@ -1,5 +1,5 @@
 
-from encoder import Encoder
+from encoder import Encoder, Decoder
 
 
 class SendOp(object):
@@ -54,6 +54,15 @@ class ResponseHeader(object):
         self.status = status
         self.tcm = tcm
 
+    def deserialize(self, byte_array):
+        rh_dec = Decoder(byte_array)
+        self.magic = rh_dec.byte()
+        self.id = rh_dec.uintvar()
+        self.op = rh_dec.byte()
+        self.status = rh_dec.byte()
+        self.tcm = rh_dec.byte()
+        return rh_dec
+
 
 class Request(object):
     def __init__(self, header):
@@ -64,7 +73,11 @@ class Request(object):
 
 
 class Response(object):
-    pass
+    def __init(self, header):
+        self.header = header
+
+    def deserialize(self, byte_array):
+        return self.header.deserialize(byte_array)
 
 
 class GetRequest(Request):
@@ -82,7 +95,17 @@ class GetRequest(Request):
 
 
 class GetResponse(Response):
-    pass
+    OP_CODE = 0x04
+
+    def __init__(self, header, value=None):
+        super(GetResponse, self).__init__(header)
+        self.header.op = self.OP_CODE
+        self.value = value
+
+    def deserialize(self, byte_array):
+        rh_dec = super(GetResponse, self).deserialize(byte_array)
+        self.value = rh_dec.len_str()
+        return rh_dec
 
 
 class Protocol(object):

@@ -40,4 +40,25 @@ class Encoder(object):
 
 
 class Decoder(object):
-    pass
+    def __init__(self, byte_array):
+        self._byte_array = byte_array
+
+    def byte(self):
+        b = hex(struct.unpack('>B', self._byte_array[0])[0])
+        self._shift(1)
+        return b
+
+    def uintvar(self):
+        pass
+
+    def string(self, n):
+        string = self._byte_array[0:n]
+        self._shift(n)
+        return string
+
+    def len_str(self):
+        n = self.uintvar()
+        return self.string(n) if n else 0
+
+    def _shift(self, n):
+        self._byte_array = self._byte_array[n:]
