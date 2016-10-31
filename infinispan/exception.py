@@ -1,0 +1,4 @@
+
+
+class DecodeError(Exception):
+    pass
