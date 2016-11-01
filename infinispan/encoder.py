@@ -44,12 +44,19 @@ class Decoder(object):
         self._byte_array = byte_array
 
     def byte(self):
-        b = hex(struct.unpack('>B', self._byte_array[0])[0])
+        b = struct.unpack('>B', self._byte_array[0])[0]
         self._shift(1)
         return b
 
     def uintvar(self):
-        pass
+        b = self.byte()
+        uintvar = b & 0x7f
+        i = 1
+        while b & 0x80:
+            b = self.byte()
+            uintvar += (b & 0x7f) << 7*i
+            i += 1
+        return uintvar
 
     def string(self, n):
         string = self._byte_array[0:n]
