@@ -40,12 +40,11 @@ class Encoder(object):
 
 
 class Decoder(object):
-    def __init__(self, byte_array):
-        self._byte_array = byte_array
+    def __init__(self, byte_gen):
+        self._byte_gen = byte_gen
 
     def byte(self):
-        b = struct.unpack('>B', self._byte_array[0])[0]
-        self._shift(1)
+        b = struct.unpack('>B', self._byte_gen.next())[0]
         return b
 
     def uintvar(self):
@@ -59,13 +58,11 @@ class Decoder(object):
         return uintvar
 
     def string(self, n):
-        string = self._byte_array[0:n]
-        self._shift(n)
+        string = ''
+        for i in range(n):
+            string += self._byte_gen.next()
         return string
 
     def len_str(self):
         n = self.uintvar()
         return self.string(n) if n else 0
-
-    def _shift(self, n):
-        self._byte_array = self._byte_array[n:]
