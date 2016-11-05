@@ -1,8 +1,10 @@
 
+import messenger as m
+
 from encoder import Encoder, Decoder
 
 
-class ClientInteligence(object):
+class ClientIntelligence(object):
     BASIC = 0x01
     TOPOLOGY = 0x02
     HASH = 0x03
@@ -35,129 +37,64 @@ class Status(object):
     CMD_TIMEOUT = 0x86
 
 
-class RequestHeader(object):
-    def __init__(self, id, version=25, cname=None, flags=0,
-                 ci=ClientInteligence.BASIC, t_id=0):
-        self.magic = 0xA0
-        self.id = id
-        self.version = version
-        self.op = None
-        self.cname = cname
-        self.flags = flags
-        self.ci = ci
-        self.t_id = t_id
-
-    def serialize(self):
-        return Encoder() \
-            .byte(self.magic) \
-            .uintvar(self.id) \
-            .byte(self.version) \
-            .byte(self.op) \
-            .len_str(self.cname) \
-            .uintvar(self.flags) \
-            .byte(self.ci) \
-            .uintvar(self.t_id) \
-            .encode()
+class RequestHeader(m.Message):
+    magic = m.Byte(default=0xA0)
+    id = m.Uvarlong()
+    version = m.Byte(default=25)
+    op = m.Byte()
+    cname = m.Lenstr()
+    flags = m.Uvarint(default=0)
+    ci = m.Byte(default=ClientIntelligence.BASIC)
+    t_id = m.Uvarint(default=0)
 
 
-class ResponseHeader(object):
-    def __init__(self, id, status=Status.OK, tcm=0):
-        self.magic = 0xA1
-        self.id = id
-        self.op = None
-        self.status = status
-        self.tcm = tcm
-
-    def deserialize(self, byte_array):
-        rh_dec = Decoder(byte_array)
-        self.magic = rh_dec.byte()
-        self.id = rh_dec.uintvar()
-        self.op = rh_dec.byte()
-        self.status = rh_dec.byte()
-        self.tcm = rh_dec.byte()
-        return rh_dec
+class ResponseHeader(m.Message):
+    magic = m.Byte(default=0xA1)
+    id = m.Uvarlong()
+    op = m.Byte()
+    status = m.Uvarint(default=Status.OK)
+    tcm = m.Uvarint(default=0)
 
 
-class Request(object):
-    def __init__(self, header):
-        self.header = header
+class Request(m.Message):
+    header = m.Composite(default=RequestHeader())
 
-    def serialize(self):
-        return self.header.serialize()
+    def __init__(self, **kwargs):
+        super(Request, self).__init__(**kwargs)
+        self.header.op = self.OP_CODE
 
 
-class Response(object):
-    def __init__(self, header):
-        self.header = header
+class Response(m.Message):
+    header = m.Composite(default=ResponseHeader())
 
-    def deserialize(self, byte_gen):
-        return self.header.deserialize(byte_gen)
+    def __init__(self, **kwargs):
+        super(Response, self).__init__(**kwargs)
+        self.header.op = self.OP_CODE
 
 
 class GetRequest(Request):
     OP_CODE = 0x03
-
-    def __init__(self, header, key):
-        super(GetRequest, self).__init__(header)
-        self.header.op = self.OP_CODE
-        self.key = key
-
-    def serialize(self):
-        return Encoder(super(GetRequest, self).serialize()) \
-            .len_str(self.key) \
-            .encode()
+    key = m.Lenstr()
 
 
 class GetResponse(Response):
     OP_CODE = 0x04
-
-    def __init__(self, header, value=None):
-        super(GetResponse, self).__init__(header)
-        self.header.op = self.OP_CODE
-        self.value = value
-
-    def deserialize(self, byte_gen):
-        rh_dec = super(GetResponse, self).deserialize(byte_gen)
-        if self.header.status == Status.OK:
-            self.value = rh_dec.len_str()
-        return rh_dec
+    value = m.Lenstr(condition=lambda s: s.header.status == Status.OK)
 
 
 class PutRequest(Request):
     OP_CODE = 0x01
-
-    def __init__(self, header, key, value, tunits=TimeUnits.DEFAULT,
-                 lifespan=10, maxidle=10):
-        super(PutRequest, self).__init__(header)
-        self.header.op = self.OP_CODE
-        self.key = key
-        self.value = value
-        self.tunits = tunits
-        self.lifespan = lifespan
-        self.maxidle = maxidle
-
-    def serialize(self):
-        rh_enc = Encoder(super(PutRequest, self).serialize()) \
-            .len_str(self.key) \
-            .byte(self.tunits)
-        if self.tunits not in [TimeUnits.DEFAULT, TimeUnits.INFINITE]:
-            rh_enc.uintvar(self.lifespan) \
-                  .uintvar(self.maxidle)
-        rh_enc.len_str(self.value)
-
-        return rh_enc.encode()
+    key = m.Lenstr()
+    tunits = m.Byte(default=TimeUnits.DEFAULT)
+    lifespan = m.Uvarint(default=10, condition=lambda s: s.tunits not in
+                         [TimeUnits.DEFAULT, TimeUnits.INFINITE])
+    max_idle = m.Uvarint(default=10, condition=lambda s: s.tunits not in
+                         [TimeUnits.DEFAULT, TimeUnits.INFINITE])
+    value = m.Lenstr()
 
 
 class PutResponse(Request):
     OP_CODE = 0x02
-
-    def __init__(self, header):
-        super(PutResponse, self).__init__(header)
-        self.header.op = self.OP_CODE
-
-    def deserialize(self, byte_gen):
-        rh_dec = super(PutResponse, self).deserialize(byte_gen)
-        return rh_dec
 
 
 class Protocol(object):
@@ -165,9 +102,38 @@ class Protocol(object):
         self.conn = conn
 
     def send(self, request):
-        id = request.header.id
-        self.conn.send(request.serialize())
+        encoded_request = self.encode(request, Encoder()).result()
+        self.conn.send(encoded_request)
         data = self.conn.recv()
-        response = GetResponse(ResponseHeader(id))
-        response.deserialize(data)
+        response = GetResponse()
+        self.decode(response, Decoder(data))
         return response
+
+    def encode(self, message, encoder):
+        for f_name in message.fields:
+            f = getattr(message, f_name)
+            f_cls = getattr(message.__class__, f_name)
+
+            if 'condition' in dir(f_cls) and not f_cls.condition(message):
+                continue
+
+            if f_cls.type == "composite":
+                encoder = self.encode(f, encoder)
+            else:
+                getattr(encoder, f_cls.type)(f)
+        return encoder
+
+    def decode(self, message, decoder):
+        for f_name in message.fields:
+            f = getattr(message, f_name)
+            f_cls = getattr(message.__class__, f_name)
+
+            if 'condition' in dir(f_cls) and not f_cls.condition(message):
+                continue
+
+            if f_cls.type == "composite":
+                decoder = self.decode(f, decoder)
+            else:
+                decoded = getattr(decoder, f_cls.type)()
+                setattr(message, f_name, decoded)
+        return decoder

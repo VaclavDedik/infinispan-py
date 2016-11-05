@@ -10,29 +10,33 @@ class Encoder(object):
         self._append(struct.pack('>B', b))
         return self
 
-    def uintvar(self, uintvar):
-        bits = uintvar & 0x7f
-        uintvar >>= 7
-        while uintvar:
+    def uvarint(self, uvarint):
+        bits = uvarint & 0x7f
+        uvarint >>= 7
+        while uvarint:
             self._append(chr(0x80 | bits))
-            bits = uintvar & 0x7f
-            uintvar >>= 7
+            bits = uvarint & 0x7f
+            uvarint >>= 7
         self._append(chr(bits))
+        return self
+
+    def uvarlong(self, uvarlong):
+        self.uvarint(uvarlong)
         return self
 
     def string(self, string):
         self._append(string)
         return self
 
-    def len_str(self, string):
+    def lenstr(self, string):
         if string:
-            self.uintvar(len(string))
+            self.uvarint(len(string))
             self.string(string)
         else:
             self.byte(0)
         return self
 
-    def encode(self):
+    def result(self):
         return self._byte_array
 
     def _append(self, byte_array):
@@ -47,15 +51,18 @@ class Decoder(object):
         b = struct.unpack('>B', self._byte_gen.next())[0]
         return b
 
-    def uintvar(self):
+    def uvarint(self):
         b = self.byte()
-        uintvar = b & 0x7f
+        uvarint = b & 0x7f
         i = 1
         while b & 0x80:
             b = self.byte()
-            uintvar += (b & 0x7f) << 7*i
+            uvarint += (b & 0x7f) << 7*i
             i += 1
-        return uintvar
+        return uvarint
+
+    def uvarlong(self):
+        return self.uvarint()
 
     def string(self, n):
         string = ''
@@ -63,6 +70,6 @@ class Decoder(object):
             string += self._byte_gen.next()
         return string
 
-    def len_str(self):
-        n = self.uintvar()
+    def lenstr(self):
+        n = self.uvarint()
         return self.string(n) if n else 0

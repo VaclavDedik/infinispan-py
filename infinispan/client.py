@@ -8,13 +8,13 @@ class Infinispan(object):
         self.protocol = protocol.Protocol(conn)
 
     def get(self, key):
-        return protocol.get(key)
+        pass
 
     def put(self, key, value):
-        return protocol.put(key, value)
+        pass
 
     def contians_key(self, key):
-        return protocol.contains_key(key)
+        pass
 
     def remove(self, key):
-        return protocol.remove(key)
+        pass
