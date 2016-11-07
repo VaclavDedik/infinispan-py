@@ -10,6 +10,10 @@ class Encoder(object):
         self._append(struct.pack('>B', b))
         return self
 
+    def splitbyte(self, b2):
+        self.byte((b2[0] << 4) + b2[1])
+        return self
+
     def uvarint(self, uvarint):
         bits = uvarint & 0x7f
         uvarint >>= 7
@@ -50,6 +54,11 @@ class Decoder(object):
     def byte(self):
         b = struct.unpack('>B', self._byte_gen.next())[0]
         return b
+
+    def splitbyte(self):
+        b = self.byte()
+        b2 = [b >> 4, b & 0x0f]
+        return b2
 
     def uvarint(self):
         b = self.byte()

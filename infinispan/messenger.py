@@ -51,6 +51,10 @@ class Byte(DataType):
     pass
 
 
+class SplitByte(DataType):
+    pass
+
+
 class Uvarint(DataType):
     pass
 

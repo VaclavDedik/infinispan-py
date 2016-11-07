@@ -1,5 +1,7 @@
 
+import threading
 import messenger as m
+import exception
 
 from encoder import Encoder, Decoder
 
@@ -26,6 +28,7 @@ class Status(object):
     OK = 0x00
     ACTION_FAILED = 0x01
     KEY_DOES_NOT_EXISTS = 0x02
+    OK_WITH_VALUE = 0x03
     OK_COMP_ENABLED = 0x06
     OK_PREV_VAL_COMP_ENABLED = 0x07
     NOT_EXEC_PREV_VAL_COMP_ENABLED = 0x08
@@ -85,28 +88,31 @@ class GetResponse(Response):
 class PutRequest(Request):
     OP_CODE = 0x01
     key = m.Lenstr()
-    tunits = m.Byte(default=TimeUnits.DEFAULT)
-    lifespan = m.Uvarint(default=10, condition=lambda s: s.tunits not in
+    tunits = m.SplitByte(default=[TimeUnits.DEFAULT, TimeUnits.DEFAULT])
+    lifespan = m.Uvarint(default=10, condition=lambda s: s.tunits[0] not in
                          [TimeUnits.DEFAULT, TimeUnits.INFINITE])
-    max_idle = m.Uvarint(default=10, condition=lambda s: s.tunits not in
+    max_idle = m.Uvarint(default=10, condition=lambda s: s.tunits[1] not in
                          [TimeUnits.DEFAULT, TimeUnits.INFINITE])
     value = m.Lenstr()
 
 
-class PutResponse(Request):
+class PutResponse(Response):
     OP_CODE = 0x02
+    prev_value = m.Lenstr()
 
 
 class Protocol(object):
     def __init__(self, conn):
+        self.lock = threading.Lock()
+        self._id = 0
         self.conn = conn
 
     def send(self, request):
+        request.header.id = self._get_next_id()
         encoded_request = self.encode(request, Encoder()).result()
         self.conn.send(encoded_request)
         data = self.conn.recv()
-        response = GetResponse()
-        self.decode(response, Decoder(data))
+        response = self.decode(Decoder(data))
         return response
 
     def encode(self, message, encoder):
@@ -123,8 +129,23 @@ class Protocol(object):
                 getattr(encoder, f_cls.type)(f)
         return encoder
 
-    def decode(self, message, decoder):
-        for f_name in message.fields:
+    def decode(self, decoder):
+        rh = ResponseHeader()
+        decoder = self._decode(rh, decoder)
+
+        response = None
+        for resp_cls in Response.__subclasses__():
+            if hasattr(resp_cls, 'OP_CODE') and resp_cls.OP_CODE == rh.op:
+                response = resp_cls(header=rh)
+
+        if response is None:
+            raise exception.DecodeError(
+                "Response operation with code %s is not supported.", rh.op)
+        self._decode(response, decoder, skip_fields=1)
+        return response
+
+    def _decode(self, message, decoder, skip_fields=0):
+        for f_name in message.fields[skip_fields:]:
             f = getattr(message, f_name)
             f_cls = getattr(message.__class__, f_name)
 
@@ -132,8 +153,13 @@ class Protocol(object):
                 continue
 
             if f_cls.type == "composite":
-                decoder = self.decode(f, decoder)
+                decoder = self._decode(f, decoder)
             else:
                 decoded = getattr(decoder, f_cls.type)()
                 setattr(message, f_name, decoded)
         return decoder
+
+    def _get_next_id(self):
+        with self.lock:
+            self._id += 1
+            return self._id
