@@ -1,5 +1,6 @@
 
 import struct
+import exception
 
 
 class Encoder(object):
@@ -15,17 +16,17 @@ class Encoder(object):
         return self
 
     def uvarint(self, uvarint):
-        bits = uvarint & 0x7f
-        uvarint >>= 7
-        while uvarint:
-            self._append(chr(0x80 | bits))
-            bits = uvarint & 0x7f
-            uvarint >>= 7
-        self._append(chr(bits))
+        encoded_uvar = self._uvar(uvarint)
+        if len(encoded_uvar) > 5:
+            raise exception.EncodeError("Value too high")
+        self._append(encoded_uvar)
         return self
 
     def uvarlong(self, uvarlong):
-        self.uvarint(uvarlong)
+        encoded_uvar = self._uvar(uvarlong)
+        if len(encoded_uvar) > 9:
+            raise exception.EncodeError("Value too high")
+        self._append(encoded_uvar)
         return self
 
     def string(self, string):
@@ -42,6 +43,17 @@ class Encoder(object):
 
     def result(self):
         return self._byte_array
+
+    def _uvar(self, uvar):
+        result = ''
+        bits = uvar & 0x7f
+        uvar >>= 7
+        while uvar:
+            result += chr(0x80 | bits)
+            bits = uvar & 0x7f
+            uvar >>= 7
+        result += chr(bits)
+        return result
 
     def _append(self, byte_array):
         self._byte_array += byte_array

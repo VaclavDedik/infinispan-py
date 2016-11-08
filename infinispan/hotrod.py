@@ -115,33 +115,23 @@ class Protocol(object):
         # encode request and send it
         req_id = self._get_next_id()
         request.header.id = req_id
-        encoded_request = self.encode(request, Encoder()).result()
+        encoded_request = self.encode(request)
         self.conn.send(encoded_request)
 
         # wait until received the correct response
         while req_id not in self._resps:
             with self.lock:
                 data = self.conn.recv()
-                response = self.decode(Decoder(data))
+                response = self.decode(data)
                 self._resps[req_id] = response
         return self._resps[req_id]
 
-    def encode(self, message, encoder):
-        for f_name in message.fields:
-            f = getattr(message, f_name)
-            f_cls = getattr(message.__class__, f_name)
+    def encode(self, message):
+        return self.encode(message, Encoder()).result()
 
-            if 'condition' in dir(f_cls) and not f_cls.condition(message):
-                continue
-
-            if f_cls.type == "composite":
-                encoder = self.encode(f, encoder)
-            else:
-                getattr(encoder, f_cls.type)(f)
-        return encoder
-
-    def decode(self, decoder):
+    def decode(self, data):
         rh = ResponseHeader()
+        decoder = Decoder(data)
         decoder = self._decode(rh, decoder)
 
         response = None
@@ -154,6 +144,20 @@ class Protocol(object):
                 "Response operation with code %s is not supported.", rh.op)
         self._decode(response, decoder, skip_fields=1)
         return response
+
+    def _encode(self, message, encoder):
+        for f_name in message.fields:
+            f = getattr(message, f_name)
+            f_cls = getattr(message.__class__, f_name)
+
+            if 'condition' in dir(f_cls) and not f_cls.condition(message):
+                continue
+
+            if f_cls.type == "composite":
+                encoder = self.encode(f, encoder)
+            else:
+                getattr(encoder, f_cls.type)(f)
+        return encoder
 
     def _decode(self, message, decoder, skip_fields=0):
         for f_name in message.fields[skip_fields:]:
