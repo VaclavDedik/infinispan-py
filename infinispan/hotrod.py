@@ -45,7 +45,7 @@ class RequestHeader(m.Message):
     id = m.Uvarlong()
     version = m.Byte(default=25)
     op = m.Byte()
-    cname = m.Lenstr()
+    cname = m.Lenstr(default='')
     flags = m.Uvarint(default=0)
     ci = m.Byte(default=ClientIntelligence.BASIC)
     t_id = m.Uvarint(default=0)
@@ -150,8 +150,14 @@ class Protocol(object):
             f = getattr(message, f_name)
             f_cls = getattr(message.__class__, f_name)
 
-            if 'condition' in dir(f_cls) and not f_cls.condition(message):
+            # test if field is available only under condition
+            if hasattr(f_cls, 'condition') and not f_cls.condition(message):
                 continue
+            # test if field is none and raise an error if so
+            if f is None:
+                raise exception.EncodeError(
+                    "Field '%s' of '%s#%s' must not be None",
+                    f, type(message).__name__, f_name)
 
             if f_cls.type == "composite":
                 encoder = self.encode(f, encoder)

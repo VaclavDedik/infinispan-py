@@ -86,7 +86,7 @@ class Decoder(object):
 
     def lenstr(self):
         n = self.uvarint()
-        return self.string(n) if n else 0
+        return self.string(n) if n else ''
 
     def _uvar(self, maxlen=5):
         b = self.byte()

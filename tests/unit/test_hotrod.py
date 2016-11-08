@@ -18,7 +18,7 @@ class TestProtocol(object):
 
         assert expected == actual
 
-    def test_encode_fail(self, protocol):
+    def test_encode_fail_all_values_not_set(self, protocol):
         with pytest.raises(exception.EncodeError):
             rh = hotrod.RequestHeader()
             protocol.encode(rh)
