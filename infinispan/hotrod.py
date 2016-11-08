@@ -3,7 +3,7 @@ import threading
 import messenger as m
 import exception
 
-from encoder import Encoder, Decoder
+from codec import Encoder, Decoder
 
 
 class ClientIntelligence(object):
@@ -98,22 +98,33 @@ class PutRequest(Request):
 
 class PutResponse(Response):
     OP_CODE = 0x02
-    prev_value = m.Lenstr()
+    prev_value = m.Lenstr(
+        condition=lambda s: s.header.status == Status.OK_WITH_VALUE)
 
 
 class Protocol(object):
     def __init__(self, conn):
         self.lock = threading.Lock()
-        self._id = 0
         self.conn = conn
+        self._id = 0
+        self._resps = {}
+        # initiate connection
+        self.conn.connect()
 
     def send(self, request):
-        request.header.id = self._get_next_id()
+        # encode request and send it
+        req_id = self._get_next_id()
+        request.header.id = req_id
         encoded_request = self.encode(request, Encoder()).result()
         self.conn.send(encoded_request)
-        data = self.conn.recv()
-        response = self.decode(Decoder(data))
-        return response
+
+        # wait until received the correct response
+        while req_id not in self._resps:
+            with self.lock:
+                data = self.conn.recv()
+                response = self.decode(Decoder(data))
+                self._resps[req_id] = response
+        return self._resps[req_id]
 
     def encode(self, message, encoder):
         for f_name in message.fields:
