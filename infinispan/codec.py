@@ -73,17 +73,10 @@ class Decoder(object):
         return b2
 
     def uvarint(self):
-        b = self.byte()
-        uvarint = b & 0x7f
-        i = 1
-        while b & 0x80:
-            b = self.byte()
-            uvarint += (b & 0x7f) << 7*i
-            i += 1
-        return uvarint
+        return self._uvar(maxlen=5)
 
     def uvarlong(self):
-        return self.uvarint()
+        return self._uvar(maxlen=9)
 
     def string(self, n):
         string = ''
@@ -94,3 +87,15 @@ class Decoder(object):
     def lenstr(self):
         n = self.uvarint()
         return self.string(n) if n else 0
+
+    def _uvar(self, maxlen=5):
+        b = self.byte()
+        uvar = b & 0x7f
+        i = 1
+        while b & 0x80:
+            if i + 1 > maxlen:
+                raise exception.DecodeError("Value too high")
+            b = self.byte()
+            uvar += (b & 0x7f) << 7*i
+            i += 1
+        return uvar
