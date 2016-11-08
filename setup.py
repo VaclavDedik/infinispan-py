@@ -1,6 +1,7 @@
+
 from setuputils import setup
 
-version="0.1"
+version = "0.1"
 
 setup(
     name='infinispan',
@@ -15,6 +16,8 @@ setup(
     keywords=['infinispan', 'key-value store'],
     license='MIT',
     packages=['infinispan'],
-    tests_require=['pytest>=2.5.0'],
+    tests_require=[
+        'pytest>=2.5.0',
+        'mock>=2.0.0'],
     cmdclass={'test': PyTest},
 )

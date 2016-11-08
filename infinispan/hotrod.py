@@ -127,7 +127,7 @@ class Protocol(object):
         return self._resps[req_id]
 
     def encode(self, message):
-        return self.encode(message, Encoder()).result()
+        return self._encode(message, Encoder()).result()
 
     def decode(self, data):
         rh = ResponseHeader()
