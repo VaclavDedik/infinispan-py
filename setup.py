@@ -16,6 +16,7 @@ setup(
     keywords=['infinispan', 'key-value store'],
     license='MIT',
     packages=['infinispan'],
+    install_requires=[],
     tests_require=[
         'pytest>=2.5.0',
         'mock>=2.0.0'],

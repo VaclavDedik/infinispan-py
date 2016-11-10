@@ -1,2 +1,3 @@
 *.pyc
 .cache
+/tests/func/server

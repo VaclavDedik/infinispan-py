@@ -102,6 +102,14 @@ class PutResponse(Response):
         condition=lambda s: s.header.status == Status.OK_WITH_VALUE)
 
 
+class PingRequest(Request):
+    OP_CODE = 0x17
+
+
+class PingResponse(Response):
+    OP_CODE = 0x18
+
+
 class Protocol(object):
     def __init__(self, conn):
         self.lock = threading.Lock()
@@ -160,7 +168,7 @@ class Protocol(object):
                     f, type(message).__name__, f_name)
 
             if f_cls.type == "composite":
-                encoder = self.encode(f, encoder)
+                encoder = self._encode(f, encoder)
             else:
                 getattr(encoder, f_cls.type)(f)
         return encoder
