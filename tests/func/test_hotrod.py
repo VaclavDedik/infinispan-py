@@ -48,3 +48,12 @@ class TestHotrod(object):
         response = protocol.send(request)
 
         assert response.header.status == Status.KEY_DOES_NOT_EXISTS
+
+    def test_error_unknown_version(self, protocol):
+        request = hotrod.GetRequest(
+            header=hotrod.RequestHeader(version=19), key="test")
+        response = protocol.send(request)
+
+        assert response.header.op == hotrod.ErrorResponse.OP_CODE
+        # Should actually be unknown version, there is a bug in infinispan tho
+        assert response.header.status == Status.SERVER_ERR

@@ -55,8 +55,8 @@ class ResponseHeader(m.Message):
     magic = m.Byte(default=0xA1)
     id = m.Uvarlong()
     op = m.Byte()
-    status = m.Uvarint(default=Status.OK)
-    tcm = m.Uvarint(default=0)
+    status = m.Byte(default=Status.OK)
+    tcm = m.Byte(default=0)
 
 
 class Request(m.Message):
@@ -108,6 +108,11 @@ class PingRequest(Request):
 
 class PingResponse(Response):
     OP_CODE = 0x18
+
+
+class ErrorResponse(Response):
+    OP_CODE = 0x50
+    error_message = m.Lenstr()
 
 
 class Protocol(object):
