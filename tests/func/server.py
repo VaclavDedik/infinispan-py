@@ -21,15 +21,18 @@ class InfinispanServer(object):
         self.mode = mode
         self.process = None
 
+        server_dir = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "server")
         zip_name = self.ZIP_NAME % version
-        zip_path = "server/" + zip_name
+        zip_path = os.path.join(server_dir, zip_name)
         dir_name = self.DIR_NAME % version
-        self.dir_path = "server/" + dir_name
+        self.dir_path = os.path.join(server_dir, dir_name)
         url = (self.DOWNLOAD_URL + zip_name) % version
 
         if not os.path.exists(zip_path):
             print("Downloading %s" % zip_name)
-            ret = subprocess.call(['./download_server.sh', url, zip_name])
+            download_script = os.path.join(server_dir, "download_server.sh")
+            ret = subprocess.call([download_script, url, zip_name, server_dir])
             if ret != 0:
                 raise RuntimeError("Failed to download %s" % zip_name)
 
@@ -37,7 +40,7 @@ class InfinispanServer(object):
             shutil.rmtree(self.dir_path)
         print("Unzipping %s" % zip_name)
         zip_ref = zipfile.ZipFile(zip_path, 'r')
-        zip_ref.extractall("server/")
+        zip_ref.extractall(server_dir)
         zip_ref.close()
 
     def start(self):

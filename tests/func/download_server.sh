@@ -2,11 +2,12 @@
 
 URL=$1
 ZIP_NAME=$2
+DIR=$3
 
-if [ ! -d "server" ]; then
-   mkdir "server"
+if [ ! -d $DIR ]; then
+   mkdir $DIR
 fi
 
-cd server
+cd $DIR
 wget $URL
 cd ..
