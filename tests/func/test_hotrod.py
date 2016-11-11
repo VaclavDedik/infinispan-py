@@ -22,11 +22,12 @@ class TestHotrod(object):
             # is ok, already stopped
             pass
 
-    @pytest.fixture
+    @pytest.yield_fixture
     def protocol(self):
         conn = connection.SocketConnection()
         protocol = hotrod.Protocol(conn)
-        return protocol
+        yield protocol
+        conn.disconnect()
 
     def test_server_connection(self, protocol):
         request = hotrod.PingRequest()

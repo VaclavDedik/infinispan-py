@@ -116,13 +116,14 @@ class ErrorResponse(Response):
 
 
 class Protocol(object):
-    def __init__(self, conn):
+    def __init__(self, conn, connect=True):
         self.lock = threading.Lock()
         self.conn = conn
         self._id = 0
         self._resps = {}
-        # initiate connection
-        self.conn.connect()
+        # initiate connection if connect=True
+        if connect:
+            self.conn.connect()
 
     def send(self, request):
         # encode request and send it

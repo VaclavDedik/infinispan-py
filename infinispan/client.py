@@ -8,8 +8,8 @@ from hotrod import Status
 
 class Infinispan(object):
     def __init__(self, host="127.0.0.1", port=11222, cache_name=None):
-        conn = connection.SocketConnection(host, port)
-        self.protocol = hotrod.Protocol(conn)
+        self.conn = connection.SocketConnection(host, port)
+        self.protocol = hotrod.Protocol(self.conn)
         self.cache_name = cache_name
 
     def get(self, key):
@@ -31,9 +31,14 @@ class Infinispan(object):
     def remove(self, key):
         pass
 
+    def disconnect(self):
+        self.conn.disconnect()
+
     def _send(self, req):
         req.header.cname = self.cache_name
         resp = self.protocol.send(req)
+
+        # Test if not an error response
         if isinstance(resp, hotrod.ErrorResponse):
             if resp.header.status in [Status.UNKNOWN_CMD,
                                       Status.UNKNOWN_VERSION,
@@ -43,4 +48,5 @@ class Infinispan(object):
                 raise exception.ServerError(resp.error_message, resp)
             else:
                 raise exception.ResponseError(resp.error_message, resp)
+
         return resp

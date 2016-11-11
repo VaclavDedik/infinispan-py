@@ -22,10 +22,11 @@ class TestClient(object):
             # is ok, already stopped
             pass
 
-    @pytest.fixture
+    @pytest.yield_fixture
     def client(self):
         client = Infinispan()
-        return client
+        yield client
+        client.disconnect()
 
     def test_put(self, client):
         result = client.put("key1", "value1")
