@@ -41,5 +41,6 @@ class SocketConnection(object):
         self._s.close()
         self._s = None
 
-    def is_connected(self):
+    @property
+    def connected(self):
         return self._s is not None

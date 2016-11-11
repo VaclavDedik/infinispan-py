@@ -121,8 +121,8 @@ class Protocol(object):
         self.conn = conn
         self._id = 0
         self._resps = {}
-        # initiate connection if connect=True
-        if connect:
+        # initiate connection if connect=True and isn't connected yet
+        if connect and not self.conn.connected:
             self.conn.connect()
 
     def send(self, request):

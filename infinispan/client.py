@@ -32,7 +32,8 @@ class Infinispan(object):
         pass
 
     def disconnect(self):
-        self.conn.disconnect()
+        if self.conn.connected:
+            self.conn.disconnect()
 
     def _send(self, req):
         req.header.cname = self.cache_name
@@ -50,3 +51,11 @@ class Infinispan(object):
                 raise exception.ResponseError(resp.error_message, resp)
 
         return resp
+
+    def __enter__(self):
+        if not self.conn.connected:
+            self.conn.connect()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.disconnect()

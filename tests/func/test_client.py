@@ -57,3 +57,8 @@ class TestClient(object):
         client.cache_name = "nonexistingCache"
         with pytest.raises(exception.ClientError):
             client.put("key1", "value1")
+
+    def test_context_manager(self):
+        with Infinispan() as client:
+            assert client.conn.connected is True
+        assert client.conn.connected is False
