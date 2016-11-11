@@ -10,3 +10,17 @@ class EncodeError(Exception):
 
 class ConnectionError(Exception):
     pass
+
+
+class ResponseError(Exception):
+    def __init__(self, message, response):
+        super(ResponseError, self).__init__(message)
+        self.response = response
+
+
+class ClientError(ResponseError):
+    pass
+
+
+class ServerError(ResponseError):
+    pass
