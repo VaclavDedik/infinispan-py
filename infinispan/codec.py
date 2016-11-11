@@ -101,4 +101,11 @@ class Decoder(object):
         return uvar
 
     def _read_next(self):
-        return self._byte_gen.next()
+        try:
+            byte = self._byte_gen.next()
+        except StopIteration:
+            raise exception.DecodeError(
+                "Unexpected end of byte array generator")
+        if not byte:
+            raise exception.DecodeError("Value is empty")
+        return byte

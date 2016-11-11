@@ -116,3 +116,11 @@ class TestDecoder(object):
         actual = codec.Decoder(string).lenstr()
 
         assert expected == actual
+
+    def test_decode_empty_byte(self):
+        with pytest.raises(exception.DecodeError):
+            codec.Decoder(iter([''])).byte()
+        with pytest.raises(exception.DecodeError):
+            codec.Decoder(iter(['a', ''])).string(2)
+        with pytest.raises(exception.DecodeError):
+            codec.Decoder(iter('a')).string(2)
