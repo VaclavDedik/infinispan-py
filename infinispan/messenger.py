@@ -34,7 +34,10 @@ class Message(object):
             if f_name in kwargs:
                 setattr(self, f_name, kwargs[f_name])
             elif hasattr(f_cls, 'default'):
-                setattr(self, f_name, f_cls.default)
+                default = f_cls.default
+                if f_cls.type == "composite":
+                    default = f_cls.default()
+                setattr(self, f_name, default)
             else:
                 setattr(self, f_name, None)
 

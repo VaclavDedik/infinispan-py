@@ -45,7 +45,7 @@ class RequestHeader(m.Message):
     id = m.Uvarlong()
     version = m.Byte(default=25)
     op = m.Byte()
-    cname = m.Lenstr(default='')
+    cname = m.Lenstr(optional=True)
     flags = m.Uvarint(default=0)
     ci = m.Byte(default=ClientIntelligence.BASIC)
     t_id = m.Uvarint(default=0)
@@ -60,7 +60,7 @@ class ResponseHeader(m.Message):
 
 
 class Request(m.Message):
-    header = m.Composite(default=RequestHeader())
+    header = m.Composite(default=RequestHeader)
 
     def __init__(self, **kwargs):
         super(Request, self).__init__(**kwargs)
@@ -68,7 +68,7 @@ class Request(m.Message):
 
 
 class Response(m.Message):
-    header = m.Composite(default=ResponseHeader())
+    header = m.Composite(default=ResponseHeader)
 
     def __init__(self, **kwargs):
         super(Response, self).__init__(**kwargs)
@@ -166,8 +166,9 @@ class Protocol(object):
             # test if field is available only under condition
             if hasattr(f_cls, 'condition') and not f_cls.condition(message):
                 continue
-            # test if field is none and raise an error if so
-            if f is None:
+            # test if field is none and raise an error if so (unless optional)
+            if f is None and \
+                    not (hasattr(f_cls, 'optional') and f_cls.optional):
                 raise exception.EncodeError(
                     "Field '%s' of '%s#%s' must not be None",
                     f, type(message).__name__, f_name)
