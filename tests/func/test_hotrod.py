@@ -3,7 +3,7 @@ import pytest
 import time
 
 from server import InfinispanServer
-from infinispan import connection, hotrod
+from infinispan import connection, hotrod, exception
 from infinispan.hotrod import Status
 
 
@@ -16,7 +16,11 @@ class TestHotrod(object):
 
     @classmethod
     def teardown_class(cls):
-        cls.server.stop()
+        try:
+            cls.server.stop()
+        except RuntimeError:
+            # is ok, already stopped
+            pass
 
     @pytest.fixture
     def protocol(self):
@@ -57,3 +61,11 @@ class TestHotrod(object):
         assert response.header.op == hotrod.ErrorResponse.OP_CODE
         # Should actually be unknown version, there is a bug in infinispan tho
         assert response.header.status == Status.SERVER_ERR
+
+    # This test should be last as it stops the server
+    def test_error_server_shutdown(self, protocol):
+        TestHotrod.server.stop()
+        time.sleep(1)
+        request = hotrod.GetRequest(key="test")
+        with pytest.raises(exception.ConnectionError):
+            protocol.send(request)

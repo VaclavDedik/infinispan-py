@@ -64,7 +64,7 @@ class Decoder(object):
         self._byte_gen = byte_gen
 
     def byte(self):
-        b = struct.unpack('>B', self._byte_gen.next())[0]
+        b = struct.unpack('>B', self._read_next())[0]
         return b
 
     def splitbyte(self):
@@ -81,7 +81,7 @@ class Decoder(object):
     def string(self, n):
         string = ''
         for i in range(n):
-            string += self._byte_gen.next()
+            string += self._read_next()
         return string
 
     def lenstr(self):
@@ -99,3 +99,6 @@ class Decoder(object):
             uvar += (b & 0x7f) << 7*i
             i += 1
         return uvar
+
+    def _read_next(self):
+        return self._byte_gen.next()

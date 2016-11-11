@@ -25,6 +25,9 @@ class SocketConnection(object):
             raise exception.ConnectionError("Not connected.")
         while True:
             packet = self.s.recv(n)
+            if not packet:
+                raise exception.ConnectionError(
+                    "The remote end hung up unexpectedly")
             yield packet
 
     def disconnect(self):
