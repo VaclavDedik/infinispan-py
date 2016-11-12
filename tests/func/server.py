@@ -43,7 +43,7 @@ class InfinispanServer(object):
         self.process = subprocess.Popen(
             [launch_script], shell=True, preexec_fn=os.setsid)
         if pytest.config.getoption("--waitlong"):
-            time.sleep(10)
+            time.sleep(20)
         else:
             time.sleep(5)
 

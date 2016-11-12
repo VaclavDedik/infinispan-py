@@ -11,4 +11,4 @@ before_install:
 install:
   - "pip install -r requirements.txt"
 # command to run tests
-script: py.test -v
+script: py.test -v --waitlong
