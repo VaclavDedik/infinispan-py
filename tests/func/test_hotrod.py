@@ -1,6 +1,5 @@
 
 import pytest
-import time
 
 from .server import InfinispanServer
 from infinispan import connection, hotrod, exception
@@ -12,10 +11,6 @@ class TestHotrod(object):
     def setup_class(cls):
         cls.server = InfinispanServer()
         cls.server.start()
-        if pytest.config.getoption("--waitlong"):
-            time.sleep(10)
-        else:
-            time.sleep(5)
 
     @classmethod
     def teardown_class(cls):
@@ -69,10 +64,6 @@ class TestHotrod(object):
     # This test should be last as it stops the server
     def test_error_server_shutdown(self, protocol):
         TestHotrod.server.stop()
-        if pytest.config.getoption("--waitlong"):
-            time.sleep(3)
-        else:
-            time.sleep(1)
         request = hotrod.GetRequest(key="test")
         with pytest.raises(exception.ConnectionError):
             protocol.send(request)

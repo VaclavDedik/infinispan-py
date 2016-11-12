@@ -1,6 +1,5 @@
 
 import pytest
-import time
 
 from .server import InfinispanServer
 from infinispan.client import Infinispan
@@ -12,10 +11,6 @@ class TestClient(object):
     def setup_class(cls):
         cls.server = InfinispanServer()
         cls.server.start()
-        if pytest.config.getoption("--waitlong"):
-            time.sleep(10)
-        else:
-            time.sleep(5)
 
     @classmethod
     def teardown_class(cls):
