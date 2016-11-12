@@ -1,9 +1,7 @@
 
 import os
 import signal
-import shutil
 import subprocess
-import zipfile
 
 
 class Mode(object):
@@ -21,8 +19,8 @@ class InfinispanServer(object):
         self.mode = mode
         self.process = None
 
-        server_dir = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "server")
+        this_dir = os.path.dirname(os.path.realpath(__file__))
+        server_dir = os.path.join(this_dir, "server")
         zip_name = self.ZIP_NAME % version
         zip_path = os.path.join(server_dir, zip_name)
         dir_name = self.DIR_NAME % version
@@ -31,24 +29,17 @@ class InfinispanServer(object):
 
         if not os.path.exists(zip_path):
             print("Downloading %s" % zip_name)
-            download_script = os.path.join(server_dir, "download_server.sh")
-            ret = subprocess.call([download_script, url, zip_name, server_dir])
+            download_script = os.path.join(this_dir, "download_server.sh")
+            ret = subprocess.call(
+                [download_script, url, zip_name, server_dir, dir_name])
             if ret != 0:
                 raise RuntimeError("Failed to download %s" % zip_name)
-
-        if os.path.exists(self.dir_path):
-            shutil.rmtree(self.dir_path)
-        print("Unzipping %s" % zip_name)
-        zip_ref = zipfile.ZipFile(zip_path, 'r')
-        zip_ref.extractall(server_dir)
-        zip_ref.close()
 
     def start(self):
         if self.process:
             raise RuntimeError("Server already running")
         launch_script = os.path.join(self.dir_path, "bin", self.mode)
 
-        os.chmod(launch_script, 0o775)
         self.process = subprocess.Popen(
             [launch_script], shell=True, preexec_fn=os.setsid)
 
