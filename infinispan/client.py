@@ -1,9 +1,8 @@
 
-import hotrod
-import connection
-import exception
-
-from hotrod import Status
+from infinispan import hotrod
+from infinispan import connection
+from infinispan import exception
+from infinispan.hotrod import Status
 
 
 class Infinispan(object):

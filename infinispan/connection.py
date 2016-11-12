@@ -1,6 +1,7 @@
 
 import socket
-import exception
+
+from infinispan import exception
 
 
 class SocketConnection(object):

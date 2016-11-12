@@ -13,7 +13,7 @@ class TestProtocol(object):
 
     def test_encode(self, protocol):
         rh = hotrod.RequestHeader(id=3, op=0x01)
-        expected = '\xa0\x03\x19\x01\x00\x00\x01\x00'
+        expected = b'\xa0\x03\x19\x01\x00\x00\x01\x00'
         actual = protocol.encode(rh)
 
         assert expected == actual

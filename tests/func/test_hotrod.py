@@ -2,7 +2,7 @@
 import pytest
 import time
 
-from server import InfinispanServer
+from .server import InfinispanServer
 from infinispan import connection, hotrod, exception
 from infinispan.hotrod import Status
 

@@ -12,7 +12,7 @@ class CreatedCounter(object):
 class DataType(object):
     def __init__(self, **kwargs):
         self._created = CreatedCounter.count()
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.items():
             setattr(self, key, value)
 
     @property

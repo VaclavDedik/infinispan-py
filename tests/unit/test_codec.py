@@ -12,21 +12,21 @@ class TestEncoder(object):
 
     def test_encode_byte(self, encoder):
         byte = 0x33
-        expected = '\x33'
+        expected = b'\x33'
         actual = encoder.byte(byte).result()
 
         assert expected == actual
 
     def test_encode_splitbyte(self, encoder):
         byte2 = [0x07, 0x06]
-        expected = '\x76'
+        expected = b'\x76'
         actual = encoder.splitbyte(byte2).result()
 
         assert expected == actual
 
     def test_encode_uvarint(self, encoder):
         uvarint = 1000
-        expected = '\xe8\x07'
+        expected = b'\xe8\x07'
         actual = encoder.uvarint(uvarint).result()
 
         assert expected == actual
@@ -38,7 +38,7 @@ class TestEncoder(object):
 
     def test_encode_uvarlong(self, encoder):
         uvarlong = 2**32
-        expected = '\x80\x80\x80\x80\x10'
+        expected = b'\x80\x80\x80\x80\x10'
         actual = encoder.uvarlong(uvarlong).result()
 
         assert expected == actual
@@ -49,15 +49,15 @@ class TestEncoder(object):
             encoder.uvarlong(uvarlong).result()
 
     def test_encode_string(self, encoder):
-        string = "ahoj"
-        expected = string
+        string = 'ahoj'
+        expected = b'ahoj'
         actual = encoder.string(string).result()
 
         assert expected == actual
 
     def test_encode_lenstr(self, encoder):
-        string = "ahoj"
-        expected = '\x04' + string
+        string = 'ahoj'
+        expected = b'\x04ahoj'
         actual = encoder.lenstr(string).result()
 
         assert expected == actual

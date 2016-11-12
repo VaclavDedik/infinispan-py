@@ -1,10 +1,11 @@
 
 import struct
-import exception
+
+from infinispan import exception
 
 
 class Encoder(object):
-    def __init__(self, byte_array=''):
+    def __init__(self, byte_array=bytes()):
         self._byte_array = byte_array
 
     def byte(self, b):
@@ -30,7 +31,8 @@ class Encoder(object):
         return self
 
     def string(self, string):
-        self._append(string)
+        for c in string:
+            self.byte(ord(c))
         return self
 
     def lenstr(self, string):
@@ -45,14 +47,14 @@ class Encoder(object):
         return self._byte_array
 
     def _uvar(self, uvar):
-        result = ''
+        result = bytes()
         bits = uvar & 0x7f
         uvar >>= 7
         while uvar:
-            result += chr(0x80 | bits)
+            result += struct.pack('>B', 0x80 | bits)
             bits = uvar & 0x7f
             uvar >>= 7
-        result += chr(bits)
+        result += struct.pack('>B', bits)
         return result
 
     def _append(self, byte_array):
@@ -64,7 +66,7 @@ class Decoder(object):
         self._byte_gen = byte_gen
 
     def byte(self):
-        b = struct.unpack('>B', self._read_next())[0]
+        b = ord(self._read_next())
         return b
 
     def splitbyte(self):
@@ -81,7 +83,7 @@ class Decoder(object):
     def string(self, n):
         string = ''
         for i in range(n):
-            string += self._read_next()
+            string += chr(self.byte())
         return string
 
     def lenstr(self):
@@ -102,7 +104,7 @@ class Decoder(object):
 
     def _read_next(self):
         try:
-            byte = self._byte_gen.next()
+            byte = next(self._byte_gen)
         except StopIteration:
             raise exception.DecodeError(
                 "Unexpected end of byte array generator")

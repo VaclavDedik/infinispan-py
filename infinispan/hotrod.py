@@ -1,9 +1,9 @@
 
 import threading
-import messenger as m
-import exception
 
-from codec import Encoder, Decoder
+from infinispan import messenger as m
+from infinispan import exception
+from infinispan.codec import Encoder, Decoder
 
 
 class ClientIntelligence(object):
