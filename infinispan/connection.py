@@ -1,5 +1,6 @@
 
 import socket
+import threading
 
 from infinispan import exception
 
@@ -9,6 +10,7 @@ class SocketConnection(object):
         self.host = host
         self.port = port
         self._s = None
+        self.lock = threading.Lock()
 
     def connect(self):
         if self._s:

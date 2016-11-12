@@ -134,7 +134,7 @@ class Protocol(object):
 
         # wait until received the correct response
         while req_id not in self._resps:
-            with self.lock:
+            with self.conn.lock:
                 data = self.conn.recv()
                 response = self.decode(data)
                 self._resps[req_id] = response
