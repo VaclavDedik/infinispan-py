@@ -1,0 +1,6 @@
+# runtime requirements
+future
+
+# test requirements
+pytest
+mock

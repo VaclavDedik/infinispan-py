@@ -4,7 +4,7 @@ from setuputils import setup
 version = "0.1"
 
 setup(
-    name='infinispan',
+    name='infinispan-py',
     version=version,
     description='Python client for Infinispan key-value store',
     long_description="",
@@ -16,8 +16,5 @@ setup(
     keywords=['infinispan', 'key-value store'],
     license='MIT',
     packages=['infinispan'],
-    install_requires=['future'],
-    tests_require=[
-        'pytest',
-        'mock']
+    install_requires=['future']
 )
