@@ -24,11 +24,15 @@ class Infinispan(object):
         resp = self._send(req)
         return resp.prev_value
 
-    def contians_key(self, key):
-        pass
+    def contains_key(self, key):
+        req = hotrod.ContainsKeyRequest(key=key)
+        resp = self._send(req)
+        return resp.header.status == Status.OK
 
     def remove(self, key):
-        pass
+        req = hotrod.RemoveRequest(key=key)
+        resp = self._send(req)
+        return resp.prev_value
 
     def disconnect(self):
         if self.conn.connected:

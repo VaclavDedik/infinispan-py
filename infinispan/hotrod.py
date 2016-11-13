@@ -115,6 +115,26 @@ class ErrorResponse(Response):
     error_message = m.Lenstr()
 
 
+class RemoveRequest(Request):
+    OP_CODE = 0x0B
+    key = m.Lenstr()
+
+
+class RemoveResponse(Response):
+    OP_CODE = 0x0C
+    prev_value = m.Lenstr(
+        condition=lambda s: s.header.status == Status.OK_WITH_VALUE)
+
+
+class ContainsKeyRequest(Request):
+    OP_CODE = 0x0F
+    key = m.Lenstr()
+
+
+class ContainsKeyResponse(Response):
+    OP_CODE = 0x10
+
+
 class Protocol(object):
     def __init__(self, conn, connect=True):
         self.lock = threading.Lock()

@@ -52,6 +52,18 @@ class TestHotrod(object):
 
         assert response.header.status == Status.KEY_DOES_NOT_EXISTS
 
+    def test_remove(self, protocol):
+        request = hotrod.RemoveRequest(key="test")
+        response = protocol.send(request)
+
+        assert response.header.status == Status.OK
+
+    def test_contains_key(self, protocol):
+        request = hotrod.ContainsKeyRequest(key="test")
+        response = protocol.send(request)
+
+        assert response.header.status == Status.KEY_DOES_NOT_EXISTS
+
     def test_error_unknown_version(self, protocol):
         request = hotrod.GetRequest(
             header=hotrod.RequestHeader(version=19), key="test")

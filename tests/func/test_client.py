@@ -36,6 +36,16 @@ class TestClient(object):
 
         assert value == "value1"
 
+    def test_remove(self, client):
+        result = client.remove("key1")
+
+        assert result is None
+
+    def test_contains_key(self, client):
+        assert client.contains_key("key1") is False
+        client.put("key1", "value1")
+        assert client.contains_key("key1") is True
+
     def test_get_non_existing(self, client):
         value = client.get("notexisting")
 
