@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 import pytest
 
@@ -48,16 +49,16 @@ class TestEncoder(object):
             uvarlong = 2**(7*9)
             encoder.uvarlong(uvarlong).result()
 
-    def test_encode_string(self, encoder):
-        string = 'ahoj'
-        expected = b'ahoj'
-        actual = encoder.string(string).result()
-
-        assert expected == actual
-
     def test_encode_lenstr(self, encoder):
         string = 'ahoj'
         expected = b'\x04ahoj'
+        actual = encoder.lenstr(string).result()
+
+        assert expected == actual
+
+    def test_encode_utf8_lenstr(self, encoder):
+        string = u'řahoj'
+        expected = b'\x06\xc5\x99ahoj'
         actual = encoder.lenstr(string).result()
 
         assert expected == actual
@@ -103,16 +104,16 @@ class TestDecoder(object):
             uvarlong = iter('\x80\x80\x80\x80\x80\x80\x80\x80\x80\x01')
             codec.Decoder(uvarlong).uvarlong()
 
-    def test_decode_string(self):
-        string = iter("ahoj")
-        expected = "ahoj"
-        actual = codec.Decoder(string).string(len(expected))
+    def test_decode_lenstr(self):
+        string = iter('\x04ahoj')
+        expected = 'ahoj'
+        actual = codec.Decoder(string).lenstr()
 
         assert expected == actual
 
-    def test_decode_lenstr(self):
-        string = iter('\x04ahoj')
-        expected = "ahoj"
+    def test_decode_utf8_lenstr(self):
+        string = iter('\x06\xc5\x99ahoj')
+        expected = u'řahoj'
         actual = codec.Decoder(string).lenstr()
 
         assert expected == actual
@@ -120,7 +121,3 @@ class TestDecoder(object):
     def test_decode_empty_byte(self):
         with pytest.raises(exception.DecodeError):
             codec.Decoder(iter([''])).byte()
-        with pytest.raises(exception.DecodeError):
-            codec.Decoder(iter(['a', ''])).string(2)
-        with pytest.raises(exception.DecodeError):
-            codec.Decoder(iter('a')).string(2)

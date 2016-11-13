@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
 
 import struct
+
+from builtins import bytes
 
 from infinispan import exception
 
@@ -30,17 +33,13 @@ class Encoder(object):
         self._append(encoded_uvar)
         return self
 
-    def string(self, string):
-        for c in string:
-            self.byte(ord(c))
-        return self
-
     def lenstr(self, string):
         if string:
-            self.uvarint(len(string))
-            self.string(string)
+            byte_array = string.encode("UTF-8")
+            self.uvarint(len(byte_array))
+            self._append(byte_array)
         else:
-            self.byte(0)
+            self.byte(0x00)
         return self
 
     def result(self):
@@ -80,15 +79,15 @@ class Decoder(object):
     def uvarlong(self):
         return self._uvar(maxlen=9)
 
-    def string(self, n):
-        string = ''
-        for i in range(n):
-            string += chr(self.byte())
-        return string
-
     def lenstr(self):
         n = self.uvarint()
-        return self.string(n) if n else ''
+        result = u''
+        if n:
+            byte_array = bytes()
+            for i in range(n):
+                byte_array += bytes([self.byte()])
+            result = byte_array.decode('UTF-8')
+        return result
 
     def _uvar(self, maxlen=5):
         b = self.byte()

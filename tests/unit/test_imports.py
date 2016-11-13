@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 
 class TestDefaultImports(object):
     def test_infinispan_class_import(self):

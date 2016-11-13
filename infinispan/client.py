@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 from infinispan import hotrod
 from infinispan import connection
