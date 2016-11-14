@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pytest
+import time
 
 from .server import InfinispanServer
 from infinispan.client import Infinispan
@@ -36,6 +37,33 @@ class TestClient(object):
         value = client.get("key1")
 
         assert value == "value1"
+
+    def test_put_with_lifespan(self, client):
+        result = client.put("key2", "value2", lifespan='2s')
+        assert result is None
+
+        value = client.get("key2")
+        assert value == "value2"
+
+        time.sleep(2)
+        value = client.get("key2")
+        assert value is None
+
+    def test_put_with_max_idle(self, client):
+        result = client.put("key3", "value3", max_idle='2s')
+        assert result is None
+
+        time.sleep(1)
+        value = client.get("key3")
+        assert value == "value3"
+
+        time.sleep(1)
+        value = client.get("key3")
+        assert value == "value3"
+
+        time.sleep(2)
+        value = client.get("key3")
+        assert value is None
 
     def test_remove(self, client):
         result = client.remove("key1")

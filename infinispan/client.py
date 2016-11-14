@@ -3,6 +3,7 @@
 from infinispan import hotrod
 from infinispan import connection
 from infinispan import exception
+from infinispan import utils
 from infinispan.hotrod import Status
 
 
@@ -20,8 +21,14 @@ class Infinispan(object):
         else:
             return resp.value
 
-    def put(self, key, value):
+    def put(self, key, value, lifespan=None, max_idle=None):
         req = hotrod.PutRequest(key=key, value=value)
+
+        if lifespan:
+            req.lifespan, req.tunits[0] = utils.from_pretty_time(lifespan)
+        if max_idle:
+            req.max_idle, req.tunits[1] = utils.from_pretty_time(max_idle)
+
         resp = self._send(req)
         return resp.prev_value
 
