@@ -65,10 +65,21 @@ class TestClient(object):
         value = client.get("key3")
         assert value is None
 
+    def test_put_with_force_previous_value(self, client):
+        result = client.put("key1", "value2", prev_val=True)
+
+        assert result == "value1"
+
     def test_remove(self, client):
         result = client.remove("key1")
 
         assert result is None
+
+    def test_remove_with_force_previous_value(self, client):
+        client.put("key1", "value1")
+        result = client.remove("key1", prev_val=True)
+
+        assert result == "value1"
 
     def test_contains_key(self, client):
         assert client.contains_key("key1") is False

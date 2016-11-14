@@ -4,7 +4,7 @@ from infinispan import hotrod
 from infinispan import connection
 from infinispan import exception
 from infinispan import utils
-from infinispan.hotrod import Status
+from infinispan.hotrod import Status, Flag
 
 
 class Infinispan(object):
@@ -21,13 +21,15 @@ class Infinispan(object):
         else:
             return resp.value
 
-    def put(self, key, value, lifespan=None, max_idle=None):
+    def put(self, key, value, lifespan=None, max_idle=None, prev_val=False):
         req = hotrod.PutRequest(key=key, value=value)
 
         if lifespan:
             req.lifespan, req.tunits[0] = utils.from_pretty_time(lifespan)
         if max_idle:
             req.max_idle, req.tunits[1] = utils.from_pretty_time(max_idle)
+        if prev_val:
+            req.header.flags |= Flag.FORCE_RETURN_VALUE
 
         resp = self._send(req)
         return resp.prev_value
@@ -37,8 +39,12 @@ class Infinispan(object):
         resp = self._send(req)
         return resp.header.status == Status.OK
 
-    def remove(self, key):
+    def remove(self, key, prev_val=False):
         req = hotrod.RemoveRequest(key=key)
+
+        if prev_val:
+            req.header.flags |= Flag.FORCE_RETURN_VALUE
+
         resp = self._send(req)
         return resp.prev_value
 

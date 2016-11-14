@@ -41,6 +41,14 @@ class Status(object):
     CMD_TIMEOUT = 0x86
 
 
+class Flag(object):
+    FORCE_RETURN_VALUE = 0x0001
+    DEFAULT_LIFESPAN = 0x0002
+    DEFAULT_MAXIDLE = 0x0004
+    SKIP_CACHE_LOAD = 0x0008
+    SKIP_INDEXING = 0x0010
+
+
 class RequestHeader(m.Message):
     magic = m.Byte(default=0xA0)
     id = m.Uvarlong()
