@@ -25,3 +25,7 @@ class ClientError(ResponseError):
 
 class ServerError(ResponseError):
     pass
+
+
+class SerializationError(Exception):
+    pass

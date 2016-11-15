@@ -4,23 +4,29 @@ from infinispan import hotrod
 from infinispan import connection
 from infinispan import exception
 from infinispan import utils
+from infinispan import serial
 from infinispan.hotrod import Status, Flag
 
 
 class Infinispan(object):
-    def __init__(self, host="127.0.0.1", port=11222, cache_name=None):
+    def __init__(self, host="127.0.0.1", port=11222, cache_name=None,
+                 key_serial=None, val_serial=None):
         self.conn = connection.SocketConnection(host, port)
         self.protocol = hotrod.Protocol(self.conn)
         self.cache_name = cache_name
 
+        self.key_serial = key_serial if key_serial else serial.UTF8()
+        self.val_serial = val_serial if val_serial else serial.UTF8()
+
     def get(self, key):
-        req = hotrod.GetRequest(key=key.encode('UTF-8'))
+        req = hotrod.GetRequest(key=self.key_serial.serialize(key))
         resp = self._send(req)
-        return resp.value.decode('UTF-8') if resp.value else None
+        return self.val_serial.deserialize(resp.value)
 
     def put(self, key, value, lifespan=None, max_idle=None, prev_val=False):
         req = hotrod.PutRequest(
-            key=key.encode('UTF-8'), value=value.encode('UTF-8'))
+            key=self.key_serial.serialize(key),
+            value=self.val_serial.serialize(value))
 
         if lifespan:
             req.lifespan, req.tunits[0] = utils.from_pretty_time(lifespan)
@@ -30,21 +36,21 @@ class Infinispan(object):
             req.header.flags |= Flag.FORCE_RETURN_VALUE
 
         resp = self._send(req)
-        return resp.prev_value.decode('UTF-8') if resp.prev_value else None
+        return self.val_serial.deserialize(resp.prev_value)
 
     def contains_key(self, key):
-        req = hotrod.ContainsKeyRequest(key=key.encode('UTF-8'))
+        req = hotrod.ContainsKeyRequest(key=self.key_serial.serialize(key))
         resp = self._send(req)
         return resp.header.status == Status.OK
 
     def remove(self, key, prev_val=False):
-        req = hotrod.RemoveRequest(key=key.encode('UTF-8'))
+        req = hotrod.RemoveRequest(key=self.key_serial.serialize(key))
 
         if prev_val:
             req.header.flags |= Flag.FORCE_RETURN_VALUE
 
         resp = self._send(req)
-        return resp.prev_value.decode('UTF-8') if resp.prev_value else None
+        return self.val_serial.deserialize(resp.prev_value)
 
     def disconnect(self):
         if self.conn.connected:
