@@ -35,39 +35,39 @@ class TestHotrod(object):
         assert response.header.status == Status.OK
 
     def test_put(self, protocol):
-        request = hotrod.PutRequest(key="test", value="ahoj")
+        request = hotrod.PutRequest(key=b"test", value=b"ahoj")
         response = protocol.send(request)
 
         assert response.header.status == Status.OK
 
     def test_get(self, protocol):
-        request = hotrod.GetRequest(key="test")
+        request = hotrod.GetRequest(key=b"test")
         response = protocol.send(request)
 
         assert response.header.status == Status.OK
-        assert response.value == "ahoj"
+        assert response.value == b"ahoj"
 
     def test_get_non_existing(self, protocol):
-        request = hotrod.GetRequest(key="doesntexist")
+        request = hotrod.GetRequest(key=b"doesntexist")
         response = protocol.send(request)
 
         assert response.header.status == Status.KEY_DOES_NOT_EXISTS
 
     def test_remove(self, protocol):
-        request = hotrod.RemoveRequest(key="test")
+        request = hotrod.RemoveRequest(key=b"test")
         response = protocol.send(request)
 
         assert response.header.status == Status.OK
 
     def test_contains_key(self, protocol):
-        request = hotrod.ContainsKeyRequest(key="test")
+        request = hotrod.ContainsKeyRequest(key=b"test")
         response = protocol.send(request)
 
         assert response.header.status == Status.KEY_DOES_NOT_EXISTS
 
     def test_error_unknown_version(self, protocol):
         request = hotrod.GetRequest(
-            header=hotrod.RequestHeader(version=19), key="test")
+            header=hotrod.RequestHeader(version=19), key=b"test")
         response = protocol.send(request)
 
         assert response.header.op == hotrod.ErrorResponse.OP_CODE
@@ -77,6 +77,6 @@ class TestHotrod(object):
     # This test should be last as it stops the server
     def test_error_server_shutdown(self, protocol):
         TestHotrod.server.stop()
-        request = hotrod.GetRequest(key="test")
+        request = hotrod.GetRequest(key=b"test")
         with pytest.raises(exception.ConnectionError):
             protocol.send(request)

@@ -14,15 +14,13 @@ class Infinispan(object):
         self.cache_name = cache_name
 
     def get(self, key):
-        req = hotrod.GetRequest(key=key)
+        req = hotrod.GetRequest(key=key.encode('UTF-8'))
         resp = self._send(req)
-        if resp.header.status != Status.OK:
-            return None
-        else:
-            return resp.value
+        return resp.value.decode('UTF-8') if resp.value else None
 
     def put(self, key, value, lifespan=None, max_idle=None, prev_val=False):
-        req = hotrod.PutRequest(key=key, value=value)
+        req = hotrod.PutRequest(
+            key=key.encode('UTF-8'), value=value.encode('UTF-8'))
 
         if lifespan:
             req.lifespan, req.tunits[0] = utils.from_pretty_time(lifespan)
@@ -32,21 +30,21 @@ class Infinispan(object):
             req.header.flags |= Flag.FORCE_RETURN_VALUE
 
         resp = self._send(req)
-        return resp.prev_value
+        return resp.prev_value.decode('UTF-8') if resp.prev_value else None
 
     def contains_key(self, key):
-        req = hotrod.ContainsKeyRequest(key=key)
+        req = hotrod.ContainsKeyRequest(key=key.encode('UTF-8'))
         resp = self._send(req)
         return resp.header.status == Status.OK
 
     def remove(self, key, prev_val=False):
-        req = hotrod.RemoveRequest(key=key)
+        req = hotrod.RemoveRequest(key=key.encode('UTF-8'))
 
         if prev_val:
             req.header.flags |= Flag.FORCE_RETURN_VALUE
 
         resp = self._send(req)
-        return resp.prev_value
+        return resp.prev_value.decode('UTF-8') if resp.prev_value else None
 
     def disconnect(self):
         if self.conn.connected:

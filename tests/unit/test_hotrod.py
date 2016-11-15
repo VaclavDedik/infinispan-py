@@ -27,7 +27,7 @@ class TestProtocol(object):
     def test_decode(self, protocol):
         data = iter('\xa1\x03\x04\x00\x00\x04ahoj')
         expected = hotrod.GetResponse(
-            header=hotrod.ResponseHeader(id=3), value="ahoj")
+            header=hotrod.ResponseHeader(id=3), value=b'ahoj')
         actual = protocol.decode(data)
 
         assert expected.header.magic == actual.header.magic

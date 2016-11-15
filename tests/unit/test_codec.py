@@ -18,6 +18,13 @@ class TestEncoder(object):
 
         assert expected == actual
 
+    def test_encode_bytes(self, encoder):
+        bytes_ = b'ahoj\x76'
+        expected = b'\x05ahoj\x76'
+        actual = encoder.bytes(bytes_).result()
+
+        assert expected == actual
+
     def test_encode_splitbyte(self, encoder):
         byte2 = [0x07, 0x06]
         expected = b'\x76'
@@ -49,17 +56,17 @@ class TestEncoder(object):
             uvarlong = 2**(7*9)
             encoder.uvarlong(uvarlong).result()
 
-    def test_encode_lenstr(self, encoder):
+    def test_encode_string(self, encoder):
         string = 'ahoj'
         expected = b'\x04ahoj'
-        actual = encoder.lenstr(string).result()
+        actual = encoder.string(string).result()
 
         assert expected == actual
 
-    def test_encode_utf8_lenstr(self, encoder):
+    def test_encode_utf8_string(self, encoder):
         string = u'řahoj'
         expected = b'\x06\xc5\x99ahoj'
-        actual = encoder.lenstr(string).result()
+        actual = encoder.string(string).result()
 
         assert expected == actual
 
@@ -70,6 +77,13 @@ class TestDecoder(object):
         byte = iter('\x33')
         expected = 0x33
         actual = codec.Decoder(byte).byte()
+
+        assert expected == actual
+
+    def test_decode_bytes(self):
+        bytes_ = iter('\x05ahoj\x76')
+        expected = b'ahoj\x76'
+        actual = codec.Decoder(bytes_).bytes()
 
         assert expected == actual
 
@@ -104,17 +118,17 @@ class TestDecoder(object):
             uvarlong = iter('\x80\x80\x80\x80\x80\x80\x80\x80\x80\x01')
             codec.Decoder(uvarlong).uvarlong()
 
-    def test_decode_lenstr(self):
+    def test_decode_string(self):
         string = iter('\x04ahoj')
         expected = 'ahoj'
-        actual = codec.Decoder(string).lenstr()
+        actual = codec.Decoder(string).string()
 
         assert expected == actual
 
-    def test_decode_utf8_lenstr(self):
+    def test_decode_utf8_string(self):
         string = iter('\x06\xc5\x99ahoj')
         expected = u'řahoj'
-        actual = codec.Decoder(string).lenstr()
+        actual = codec.Decoder(string).string()
 
         assert expected == actual
 

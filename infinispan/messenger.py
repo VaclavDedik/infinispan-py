@@ -56,6 +56,10 @@ class Byte(DataType):
     pass
 
 
+class Bytes(DataType):
+    pass
+
+
 class SplitByte(DataType):
     pass
 
@@ -68,5 +72,5 @@ class Uvarlong(DataType):
     pass
 
 
-class Lenstr(DataType):
+class String(DataType):
     pass

@@ -54,7 +54,7 @@ class RequestHeader(m.Message):
     id = m.Uvarlong()
     version = m.Byte(default=25)
     op = m.Byte()
-    cname = m.Lenstr(optional=True)
+    cname = m.String(optional=True)
     flags = m.Uvarint(default=0)
     ci = m.Byte(default=ClientIntelligence.BASIC)
     t_id = m.Uvarint(default=0)
@@ -86,28 +86,28 @@ class Response(m.Message):
 
 class GetRequest(Request):
     OP_CODE = 0x03
-    key = m.Lenstr()
+    key = m.Bytes()
 
 
 class GetResponse(Response):
     OP_CODE = 0x04
-    value = m.Lenstr(condition=lambda s: s.header.status == Status.OK)
+    value = m.Bytes(condition=lambda s: s.header.status == Status.OK)
 
 
 class PutRequest(Request):
     OP_CODE = 0x01
-    key = m.Lenstr()
+    key = m.Bytes()
     tunits = m.SplitByte(default=[TimeUnits.DEFAULT, TimeUnits.DEFAULT])
     lifespan = m.Uvarint(default=10, condition=lambda s: s.tunits[0] not in
                          [TimeUnits.DEFAULT, TimeUnits.INFINITE])
     max_idle = m.Uvarint(default=10, condition=lambda s: s.tunits[1] not in
                          [TimeUnits.DEFAULT, TimeUnits.INFINITE])
-    value = m.Lenstr()
+    value = m.Bytes()
 
 
 class PutResponse(Response):
     OP_CODE = 0x02
-    prev_value = m.Lenstr(
+    prev_value = m.Bytes(
         condition=lambda s: s.header.status == Status.OK_WITH_VALUE)
 
 
@@ -121,23 +121,23 @@ class PingResponse(Response):
 
 class ErrorResponse(Response):
     OP_CODE = 0x50
-    error_message = m.Lenstr()
+    error_message = m.String()
 
 
 class RemoveRequest(Request):
     OP_CODE = 0x0B
-    key = m.Lenstr()
+    key = m.Bytes()
 
 
 class RemoveResponse(Response):
     OP_CODE = 0x0C
-    prev_value = m.Lenstr(
+    prev_value = m.Bytes(
         condition=lambda s: s.header.status == Status.OK_WITH_VALUE)
 
 
 class ContainsKeyRequest(Request):
     OP_CODE = 0x0F
-    key = m.Lenstr()
+    key = m.Bytes()
 
 
 class ContainsKeyResponse(Response):
