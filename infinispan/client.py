@@ -15,8 +15,8 @@ class Infinispan(object):
         self.protocol = hotrod.Protocol(self.conn)
         self.cache_name = cache_name
 
-        self.key_serial = key_serial if key_serial else serial.UTF8()
-        self.val_serial = val_serial if val_serial else serial.UTF8()
+        self.key_serial = key_serial if key_serial else serial.JSONPickle()
+        self.val_serial = val_serial if val_serial else serial.JSONPickle()
 
     def get(self, key):
         req = hotrod.GetRequest(key=self.key_serial.serialize(key))
