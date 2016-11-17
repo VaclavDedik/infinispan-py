@@ -4,7 +4,7 @@ import struct
 
 from builtins import bytes
 
-from infinispan import exception
+from infinispan import error
 
 
 class Encoder(object):
@@ -27,14 +27,14 @@ class Encoder(object):
     def uvarint(self, uvarint):
         encoded_uvar = self._uvar(uvarint)
         if len(encoded_uvar) > 5:
-            raise exception.EncodeError("Value too high")
+            raise error.EncodeError("Value too high")
         self._append(encoded_uvar)
         return self
 
     def uvarlong(self, uvarlong):
         encoded_uvar = self._uvar(uvarlong)
         if len(encoded_uvar) > 9:
-            raise exception.EncodeError("Value too high")
+            raise error.EncodeError("Value too high")
         self._append(encoded_uvar)
         return self
 
@@ -98,7 +98,7 @@ class Decoder(object):
         i = 1
         while b & 0x80:
             if i + 1 > maxlen:
-                raise exception.DecodeError("Value too high")
+                raise error.DecodeError("Value too high")
             b = self.byte()
             uvar += (b & 0x7f) << 7*i
             i += 1
@@ -108,8 +108,8 @@ class Decoder(object):
         try:
             byte = next(self._byte_gen)
         except StopIteration:
-            raise exception.DecodeError(
+            raise error.DecodeError(
                 "Unexpected end of byte array generator")
         if not byte:
-            raise exception.DecodeError("Value is empty")
+            raise error.DecodeError("Value is empty")
         return byte

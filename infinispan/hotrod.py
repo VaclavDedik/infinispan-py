@@ -3,7 +3,7 @@
 import threading
 
 from infinispan import messenger as m
-from infinispan import exception
+from infinispan import error
 from infinispan.codec import Encoder, Decoder
 
 
@@ -180,7 +180,7 @@ class Protocol(object):
                 response = resp_cls(header=rh)
 
         if response is None:
-            raise exception.DecodeError(
+            raise error.DecodeError(
                 "Response operation with code %s is not supported.", rh.op)
         self._decode(response, decoder, skip_fields=1)
         return response
@@ -196,7 +196,7 @@ class Protocol(object):
             # test if field is none and raise an error if so (unless optional)
             if f is None and \
                     not (hasattr(f_cls, 'optional') and f_cls.optional):
-                raise exception.EncodeError(
+                raise error.EncodeError(
                     "Field '%s' of '%s#%s' must not be None",
                     f, type(message).__name__, f_name)
 

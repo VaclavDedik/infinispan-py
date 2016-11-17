@@ -5,7 +5,7 @@ import time
 
 from .server import InfinispanServer
 from infinispan.client import Infinispan
-from infinispan import exception
+from infinispan import error
 
 
 class TestClient(object):
@@ -106,7 +106,7 @@ class TestClient(object):
 
     def test_put_to_non_existing_cache(self, client):
         client.cache_name = "nonexistingCache"
-        with pytest.raises(exception.ClientError):
+        with pytest.raises(error.ClientError):
             client.put("key1", "value1")
 
     def test_context_manager(self):

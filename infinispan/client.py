@@ -2,7 +2,7 @@
 
 from infinispan import hotrod
 from infinispan import connection
-from infinispan import exception
+from infinispan import error
 from infinispan import utils
 from infinispan import serial
 from infinispan.hotrod import Status, Flag
@@ -79,11 +79,11 @@ class Infinispan(object):
             if resp.header.status in [Status.UNKNOWN_CMD,
                                       Status.UNKNOWN_VERSION,
                                       Status.PARSING_ERR]:
-                raise exception.ClientError(resp.error_message, resp)
+                raise error.ClientError(resp.error_message, resp)
             elif resp.header.status in [Status.SERVER_ERR, Status.CMD_TIMEOUT]:
-                raise exception.ServerError(resp.error_message, resp)
+                raise error.ServerError(resp.error_message, resp)
             else:
-                raise exception.ResponseError(resp.error_message, resp)
+                raise error.ResponseError(resp.error_message, resp)
 
         return resp
 

@@ -4,7 +4,7 @@ import jsonpickle
 
 from past.builtins import basestring
 
-from infinispan import exception
+from infinispan import error
 
 
 class Serialization(object):
@@ -20,7 +20,7 @@ class UTF8(Serialization):
         if not string:
             return None
         elif not isinstance(string, basestring):
-            raise exception.SerializationError("Value must be a string.")
+            raise error.SerializationError("Value must be a string.")
         else:
             return string.encode("UTF-8")
 

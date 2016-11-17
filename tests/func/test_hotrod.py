@@ -3,7 +3,7 @@
 import pytest
 
 from .server import InfinispanServer
-from infinispan import connection, hotrod, exception
+from infinispan import connection, hotrod, error
 from infinispan.hotrod import Status
 
 
@@ -79,7 +79,7 @@ class TestHotrod(object):
         TestHotrod.server.stop()
         request = hotrod.GetRequest(key=b"test")
         try:
-            with pytest.raises(exception.ConnectionError):
+            with pytest.raises(error.ConnectionError):
                 protocol.send(request)
         finally:
             TestHotrod.server.start()

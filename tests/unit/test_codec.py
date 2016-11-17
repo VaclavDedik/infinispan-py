@@ -2,7 +2,7 @@
 
 import pytest
 
-from infinispan import codec, exception
+from infinispan import codec, error
 
 
 class TestEncoder(object):
@@ -40,7 +40,7 @@ class TestEncoder(object):
         assert expected == actual
 
     def test_encode_uvarint_fail_too_long(self, encoder):
-        with pytest.raises(exception.EncodeError):
+        with pytest.raises(error.EncodeError):
             uvarint = 2**(7*5)
             encoder.uvarint(uvarint).result()
 
@@ -52,7 +52,7 @@ class TestEncoder(object):
         assert expected == actual
 
     def test_encode_uvarlong_fail_too_long(self, encoder):
-        with pytest.raises(exception.EncodeError):
+        with pytest.raises(error.EncodeError):
             uvarlong = 2**(7*9)
             encoder.uvarlong(uvarlong).result()
 
@@ -102,7 +102,7 @@ class TestDecoder(object):
         assert expected == actual
 
     def test_decode_uvarint_fail_too_long(self):
-        with pytest.raises(exception.DecodeError):
+        with pytest.raises(error.DecodeError):
             uvarint = iter('\x80\x80\x80\x80\x80\x01')
             codec.Decoder(uvarint).uvarint()
 
@@ -114,7 +114,7 @@ class TestDecoder(object):
         assert expected == actual
 
     def test_decode_uvarlong_fail_too_long(self):
-        with pytest.raises(exception.DecodeError):
+        with pytest.raises(error.DecodeError):
             uvarlong = iter('\x80\x80\x80\x80\x80\x80\x80\x80\x80\x01')
             codec.Decoder(uvarlong).uvarlong()
 
@@ -133,5 +133,5 @@ class TestDecoder(object):
         assert expected == actual
 
     def test_decode_empty_byte(self):
-        with pytest.raises(exception.DecodeError):
+        with pytest.raises(error.DecodeError):
             codec.Decoder(iter([''])).byte()

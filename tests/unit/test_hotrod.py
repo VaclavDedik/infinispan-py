@@ -3,7 +3,7 @@
 import pytest
 
 from mock import MagicMock
-from infinispan import hotrod, exception
+from infinispan import hotrod, error
 
 
 class TestProtocol(object):
@@ -20,7 +20,7 @@ class TestProtocol(object):
         assert expected == actual
 
     def test_encode_fail_all_values_not_set(self, protocol):
-        with pytest.raises(exception.EncodeError):
+        with pytest.raises(error.EncodeError):
             rh = hotrod.RequestHeader()
             protocol.encode(rh)
 
