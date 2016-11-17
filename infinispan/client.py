@@ -9,8 +9,35 @@ from infinispan.hotrod import Status, Flag
 
 
 class Infinispan(object):
+    """Main infinispan-py client interface. Use this interface if you want to
+    work with a high level of abstraction. For a low level of abstraction, see
+    module :mod:`infinispan.hotrod`.
+
+    This class implements context manager interface, which opens a socket
+    connection upon entry and closes it when exited. Alternatively, you can
+    open and close the connection youself with methods :meth:`connect` and
+    :meth:`disconnect`. When used out of any context manager or when connection
+    is not manually opened via :meth:`connect`, connection is automatically
+    established when a connection bound method is invoked for the first time.
+    """
+
     def __init__(self, host="127.0.0.1", port=11222, timeout=10,
                  cache_name=None, key_serial=None, val_serial=None):
+        """Initializes new client instance.
+
+        :param host: IP address of the host where Infinispan server is running.
+                     Default value is "127.0.0.1".
+        :param port: Port number of the Infinispan server.
+                     Default value is 11222.
+        :param timeout: How long should the client wait for a response from the
+                        server in seconds. Default value is 10 seconds.
+        :param cache_name: Specify a name if named cache should be used.
+        :param key_serial: Serializer of the key. A serializer must implement
+                           class :class:`infinispan.serial.Serialization`.
+                           By default, :class:`infinispan.serial.JSONPickle` is
+                           used.
+        :param val_serial: Same as key_serial, but for value."""
+
         self.conn = connection.SocketConnection(host, port, timeout=timeout)
         self.protocol = hotrod.Protocol(self.conn)
         self.cache_name = cache_name
@@ -19,11 +46,38 @@ class Infinispan(object):
         self.val_serial = val_serial if val_serial else serial.JSONPickle()
 
     def get(self, key):
+        """Sends a request to Infinispan server asking for a value by key.
+
+        :param key: Key associated with the value you want to retrieve.
+        :return: Value associated with the key if key exists,
+                  :obj:`None` otherwise.
+        """
         req = hotrod.GetRequest(key=self.key_serial.serialize(key))
         resp = self._send(req)
         return self.val_serial.deserialize(resp.value)
 
     def put(self, key, value, lifespan=None, max_idle=None, previous=False):
+        """Creates new key-value pair on the Infinispan server.
+
+        :param key: Key to be associated with a value.
+        :param value: Value to be associated with the key.
+        :param lifespan: How long should the key-value pair be stored on the
+                         server. Accepts value in the following format: '$n$u',
+                         where $n is number (e.g. 10) and $u is unit, which can
+                         be 's' (second), 'ms' (milisecond),
+                         'us' (microsecond), 'ns' (nanosecond), 'm' (minute),
+                         'h' (hour) and 'd' (day). For example '10m' means the
+                         server will wait 10 minutes before removing the
+                         key-value pair. You can also use 'inf' value, which
+                         means the key-value pair will be available forever.
+                         By default, infinispan server configuration is used.
+        :param max_idle: How long can this key-value pair be idle (no clients
+                         requests for it) before it is removed from the server.
+                         For the accepted format and default value,
+                         see :attr:`lifespan`.
+        :param previous: Force return of previously stored value under the key.
+        :return: :obj:`None` unless previous value forced.
+        """
         req = hotrod.PutRequest(
             key=self.key_serial.serialize(key),
             value=self.val_serial.serialize(value))
@@ -39,11 +93,22 @@ class Infinispan(object):
         return self.val_serial.deserialize(resp.prev_value)
 
     def contains_key(self, key):
+        """Returns whether the key is stored on the server.
+
+        :param key: Key you want to know if available on the server.
+        :return: :obj:`True` if key is stored on the server,
+                  :obj:`False` otherwise."""
         req = hotrod.ContainsKeyRequest(key=self.key_serial.serialize(key))
         resp = self._send(req)
         return resp.header.status == Status.OK
 
     def remove(self, key, previous=False):
+        """Removes key and it's associated value from the server.
+
+        :param key: Key you want to remove.
+        :param previous: Force return of previously stored value under the key.
+        :return: :obj:`None` unless previous value forced.
+        """
         req = hotrod.RemoveRequest(key=self.key_serial.serialize(key))
 
         if previous:
@@ -53,16 +118,25 @@ class Infinispan(object):
         return self.val_serial.deserialize(resp.prev_value)
 
     def ping(self):
+        """Pings the server to test the connection.
+
+        :return: :obj:`True` if response status is OK."""
         req = hotrod.PingRequest()
         resp = self._send(req)
         return resp.header.status == Status.OK
 
     def connect(self):
+        """Establishes connection with the server. If connection is already
+        open, does not do anything."""
+
         with self.conn.lock:
             if not self.conn.connected:
                 self.conn.connect()
 
     def disconnect(self):
+        """Closes connection with the server. If connection is already closed,
+        does not do anything."""
+
         with self.conn.lock:
             if self.conn.connected:
                 self.conn.disconnect()

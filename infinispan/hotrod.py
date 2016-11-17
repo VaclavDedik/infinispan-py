@@ -145,13 +145,27 @@ class ContainsKeyResponse(Response):
 
 
 class Protocol(object):
+    """Low level API that sends requests and blocks until response received."""
+
     def __init__(self, conn):
+        """Creates new protocol instance.
+
+        :param conn: Connection, you need to open the connection yourself
+                     before you can send requests and close it when you are
+                     done.
+        """
         self.lock = threading.Lock()
         self.conn = conn
         self._id = 0
         self._resps = {}
 
     def send(self, request):
+        """Sends a request to the server.
+
+        :param request: Request to be sent to the associated Infinispan server.
+        :return: Response from the server.
+        """
+
         # encode request and send it
         req_id = self._get_next_id()
         request.header.id = req_id
@@ -167,9 +181,21 @@ class Protocol(object):
         return self._resps[req_id]
 
     def encode(self, message):
+        """Encodes a message (request or a response).
+
+        :param message: Response or Request object you want to encode.
+        :return: Byte array which represents the encoded message.
+        """
+
         return self._encode(message, Encoder()).result()
 
     def decode(self, data):
+        """Decodes a response from a byte array.
+
+        :param data: Byte array that represents the response.
+        :return: Response object.
+        """
+
         rh = ResponseHeader()
         decoder = Decoder(data)
         decoder = self._decode(rh, decoder)
