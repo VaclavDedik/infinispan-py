@@ -9,9 +9,9 @@ from infinispan.hotrod import Status, Flag
 
 
 class Infinispan(object):
-    def __init__(self, host="127.0.0.1", port=11222, cache_name=None,
-                 key_serial=None, val_serial=None):
-        self.conn = connection.SocketConnection(host, port)
+    def __init__(self, host="127.0.0.1", port=11222, timeout=10,
+                 cache_name=None, key_serial=None, val_serial=None):
+        self.conn = connection.SocketConnection(host, port, timeout=timeout)
         self.protocol = hotrod.Protocol(self.conn)
         self.cache_name = cache_name
 
