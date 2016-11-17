@@ -145,14 +145,11 @@ class ContainsKeyResponse(Response):
 
 
 class Protocol(object):
-    def __init__(self, conn, connect=True):
+    def __init__(self, conn):
         self.lock = threading.Lock()
         self.conn = conn
         self._id = 0
         self._resps = {}
-        # initiate connection if connect=True and isn't connected yet
-        if connect and not self.conn.connected:
-            self.conn.connect()
 
     def send(self, request):
         # encode request and send it

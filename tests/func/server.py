@@ -57,3 +57,9 @@ class InfinispanServer(object):
         else:
             time.sleep(1)
         self.process = None
+
+    def kill(self):
+        if not self.process:
+            raise RuntimeError("Server is already stopped")
+        os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)
+        self.process = None

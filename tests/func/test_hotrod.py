@@ -25,6 +25,7 @@ class TestHotrod(object):
     def protocol(self):
         conn = connection.SocketConnection()
         protocol = hotrod.Protocol(conn)
+        conn.connect()
         yield protocol
         conn.disconnect()
 
@@ -74,9 +75,11 @@ class TestHotrod(object):
         # Should actually be unknown version, there is a bug in infinispan tho
         assert response.header.status == Status.SERVER_ERR
 
-    # This test should be last as it stops the server
     def test_error_server_shutdown(self, protocol):
         TestHotrod.server.stop()
         request = hotrod.GetRequest(key=b"test")
-        with pytest.raises(exception.ConnectionError):
-            protocol.send(request)
+        try:
+            with pytest.raises(exception.ConnectionError):
+                protocol.send(request)
+        finally:
+            TestHotrod.server.start()

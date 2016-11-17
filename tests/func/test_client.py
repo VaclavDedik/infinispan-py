@@ -28,6 +28,9 @@ class TestClient(object):
         yield client
         client.disconnect()
 
+    def test_ping(self, client):
+        assert client.ping()
+
     def test_put(self, client):
         result = client.put("key1", "value1")
 

@@ -52,11 +52,25 @@ class Infinispan(object):
         resp = self._send(req)
         return self.val_serial.deserialize(resp.prev_value)
 
+    def ping(self):
+        req = hotrod.PingRequest()
+        resp = self._send(req)
+        return resp.header.status == Status.OK
+
+    def connect(self):
+        with self.conn.lock:
+            if not self.conn.connected:
+                self.conn.connect()
+
     def disconnect(self):
-        if self.conn.connected:
-            self.conn.disconnect()
+        with self.conn.lock:
+            if self.conn.connected:
+                self.conn.disconnect()
 
     def _send(self, req):
+        if not self.conn.connected:
+            self.connect()
+
         req.header.cname = self.cache_name
         resp = self.protocol.send(req)
 
@@ -74,8 +88,7 @@ class Infinispan(object):
         return resp
 
     def __enter__(self):
-        if not self.conn.connected:
-            self.conn.connect()
+        self.connect()
         return self
 
     def __exit__(self, type, value, traceback):
