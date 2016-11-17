@@ -17,7 +17,7 @@ class InfinispanServer(object):
     ZIP_NAME = "infinispan-server-%s.Final-bin.zip"
     DIR_NAME = "infinispan-server-%s.Final"
 
-    def __init__(self, version="8.2.4", mode=Mode.STANDALONE):
+    def __init__(self, version="8.2.5", mode=Mode.STANDALONE):
         self.version = version
         self.mode = mode
         self.process = None
