@@ -16,5 +16,8 @@ setup(
     keywords=['infinispan', 'key-value store'],
     license='MIT',
     packages=['infinispan'],
-    install_requires=['future']
+    install_requires=[
+        'future',
+        'jsonpickle'
+    ]
 )
