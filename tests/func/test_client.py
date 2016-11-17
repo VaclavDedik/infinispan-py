@@ -66,7 +66,7 @@ class TestClient(object):
         assert value is None
 
     def test_put_with_force_previous_value(self, client):
-        result = client.put("key1", "value2", prev_val=True)
+        result = client.put("key1", "value2", previous=True)
 
         assert result == "value1"
 
@@ -77,7 +77,7 @@ class TestClient(object):
 
     def test_remove_with_force_previous_value(self, client):
         client.put("key1", "value1")
-        result = client.remove("key1", prev_val=True)
+        result = client.remove("key1", previous=True)
 
         assert result == "value1"
 

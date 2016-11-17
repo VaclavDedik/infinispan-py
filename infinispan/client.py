@@ -23,7 +23,7 @@ class Infinispan(object):
         resp = self._send(req)
         return self.val_serial.deserialize(resp.value)
 
-    def put(self, key, value, lifespan=None, max_idle=None, prev_val=False):
+    def put(self, key, value, lifespan=None, max_idle=None, previous=False):
         req = hotrod.PutRequest(
             key=self.key_serial.serialize(key),
             value=self.val_serial.serialize(value))
@@ -32,7 +32,7 @@ class Infinispan(object):
             req.lifespan, req.tunits[0] = utils.from_pretty_time(lifespan)
         if max_idle:
             req.max_idle, req.tunits[1] = utils.from_pretty_time(max_idle)
-        if prev_val:
+        if previous:
             req.header.flags |= Flag.FORCE_RETURN_VALUE
 
         resp = self._send(req)
@@ -43,10 +43,10 @@ class Infinispan(object):
         resp = self._send(req)
         return resp.header.status == Status.OK
 
-    def remove(self, key, prev_val=False):
+    def remove(self, key, previous=False):
         req = hotrod.RemoveRequest(key=self.key_serial.serialize(key))
 
-        if prev_val:
+        if previous:
             req.header.flags |= Flag.FORCE_RETURN_VALUE
 
         resp = self._send(req)
