@@ -18,6 +18,7 @@ setup(
     packages=['infinispan'],
     install_requires=[
         'future',
+        'futures',
         'jsonpickle'
     ]
 )

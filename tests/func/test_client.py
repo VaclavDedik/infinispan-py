@@ -113,3 +113,10 @@ class TestClient(object):
         with Infinispan() as client:
             assert client.conn.connected is True
         assert client.conn.connected is False
+
+    def test_async(self, client):
+        f = client.put_async("test_async", "value")
+        assert f.done() is False
+
+        assert f.result() is None
+        assert client.get("test_async") == "value"

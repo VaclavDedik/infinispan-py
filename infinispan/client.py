@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 
+from concurrent.futures import ThreadPoolExecutor
+
 from infinispan import hotrod
 from infinispan import connection
 from infinispan import error
 from infinispan import utils
 from infinispan import serial
+from infinispan.async import generate_async, sync_op
 from infinispan.hotrod import Status, Flag
 
 
+@generate_async
 class Infinispan(object):
     """Main infinispan-py client interface. Use this interface if you want to
     work with a high level of abstraction. For a low level of abstraction, see
@@ -19,10 +23,17 @@ class Infinispan(object):
     :meth:`disconnect`. When used out of any context manager or when connection
     is not manually opened via :meth:`connect`, connection is automatically
     established when a connection bound method is invoked for the first time.
+
+    You can also use asynchronous counterparts of every connection bound
+    blocking operation (like :meth:`get`, :meth:`put` etc) by calling the name
+    of the method you want with '_async' suffix, e.g. if you want to call
+    :meth:`put` asynchronously, instad of invoking just :meth:`put`, you invoke
+    'put_async'. Async operations return :class:`concurrent.futures.Future`.
     """
 
     def __init__(self, host="127.0.0.1", port=11222, timeout=10,
-                 cache_name=None, key_serial=None, val_serial=None):
+                 cache_name=None, key_serial=None, val_serial=None,
+                 pool_size=20):
         """Initializes new client instance.
 
         :param host: IP address of the host where Infinispan server is running.
@@ -36,6 +47,8 @@ class Infinispan(object):
                            class :class:`infinispan.serial.Serialization`.
                            By default, :class:`infinispan.serial.JSONPickle` is
                            used.
+        :param pool_size: Size of the thread pool that is used for async
+                          operations.
         :param val_serial: Same as key_serial, but for value."""
 
         self.conn = connection.SocketConnection(host, port, timeout=timeout)
@@ -45,6 +58,9 @@ class Infinispan(object):
         self.key_serial = key_serial if key_serial else serial.JSONPickle()
         self.val_serial = val_serial if val_serial else serial.JSONPickle()
 
+        self.executor = ThreadPoolExecutor(max_workers=pool_size)
+
+    @sync_op
     def get(self, key):
         """Sends a request to Infinispan server asking for a value by key.
 
@@ -56,6 +72,7 @@ class Infinispan(object):
         resp = self._send(req)
         return self.val_serial.deserialize(resp.value)
 
+    @sync_op
     def put(self, key, value, lifespan=None, max_idle=None, previous=False):
         """Creates new key-value pair on the Infinispan server.
 
@@ -92,6 +109,7 @@ class Infinispan(object):
         resp = self._send(req)
         return self.val_serial.deserialize(resp.prev_value)
 
+    @sync_op
     def contains_key(self, key):
         """Returns whether the key is stored on the server.
 
@@ -102,6 +120,7 @@ class Infinispan(object):
         resp = self._send(req)
         return resp.header.status == Status.OK
 
+    @sync_op
     def remove(self, key, previous=False):
         """Removes key and it's associated value from the server.
 
@@ -117,6 +136,7 @@ class Infinispan(object):
         resp = self._send(req)
         return self.val_serial.deserialize(resp.prev_value)
 
+    @sync_op
     def ping(self):
         """Pings the server to test the connection.
 
