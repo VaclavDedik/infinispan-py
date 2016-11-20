@@ -6,3 +6,5 @@ jsonpickle
 # test requirements
 pytest
 mock
+pytest-cov
+coveralls

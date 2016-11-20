@@ -3,3 +3,4 @@
 /tests/func/server
 .venv
 .venv3
+.coverage
