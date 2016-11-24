@@ -97,10 +97,10 @@ class ConnectionPool(object):
     def __init__(self, connections=[]):
         self._connections = connections
         self.size = len(self._connections)
-        self._queue = queue.Queue(maxsize=self.size)
+        self._queue = queue.Queue()
         for conn in self._connections:
             self._queue.put(conn)
-        self.lock = threading.BoundedSemaphore(self.size)
+        self.lock = threading.Semaphore(self.size)
 
     def connect(self):
         for conn in self._connections:
