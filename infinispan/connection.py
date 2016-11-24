@@ -3,6 +3,7 @@
 import time
 import socket
 import threading
+import queue
 
 from infinispan import error
 
@@ -90,3 +91,54 @@ class SocketConnection(object):
                 if delay < 0.4:
                     delay *= 2
         return packet
+
+
+class ConnectionPool(object):
+    def __init__(self, connections=[]):
+        self._connections = connections
+        self.size = len(self._connections)
+        self._queue = queue.Queue(maxsize=self.size)
+        for conn in self._connections:
+            self._queue.put(conn)
+        self.lock = threading.BoundedSemaphore(self.size)
+
+    def connect(self):
+        for conn in self._connections:
+            conn.connect()
+
+    def send(self, byte_array):
+        conn = self._get_conn()
+        try:
+            conn.send(byte_array)
+        finally:
+            self._queue.task_done()
+            self._return_conn(conn)
+
+    def recv(self):
+        conn = self._get_conn()
+        data = conn.recv()
+        try:
+            n = yield next(data)
+            while n != 0:
+                n = yield data.send(n)
+        finally:
+            self._queue.task_done()
+            self._return_conn(conn)
+
+    def disconnect(self):
+        for conn in self._connections:
+            conn.disconnect()
+
+    def _get_conn(self):
+        return self._queue.get(False)
+
+    def _return_conn(self, conn):
+        self._queue.put(conn, False)
+
+    @property
+    def available(self):
+        return self._queue.qsize()
+
+    @property
+    def connected(self):
+        return all(map(lambda c: c.connected, self._connections))
