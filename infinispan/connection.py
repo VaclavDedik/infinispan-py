@@ -37,11 +37,12 @@ class SocketConnection(object):
         if ret == 0:
             raise error.ConnectionError("Socket connection broken.")
 
-    def recv(self, n=1):
+    def recv(self):
         if not self._s:
             raise error.ConnectionError("Not connected.")
 
-        while True:
+        n = 1
+        while n != 0:
             try:
                 packet = self._read_packet(n, self.timeout)
             except socket.error:
@@ -50,7 +51,9 @@ class SocketConnection(object):
             if not packet:
                 raise error.ConnectionError(
                     "The remote end hung up unexpectedly.")
-            yield packet
+            n = yield packet
+            # must test for None as 0 is termination
+            n = n if n is not None else 1
 
     def disconnect(self):
         if not self._s:

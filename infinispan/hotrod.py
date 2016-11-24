@@ -209,6 +209,13 @@ class Protocol(object):
             raise error.DecodeError(
                 "Response operation with code %s is not supported.", rh.op)
         self._decode(response, decoder, skip_fields=1)
+
+        # Terminate if data stream (has method send)
+        try:
+            if hasattr(data, "send"):
+                data.send(0)
+        except StopIteration:
+            pass
         return response
 
     def _encode(self, message, encoder):
