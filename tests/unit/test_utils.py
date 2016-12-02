@@ -28,3 +28,5 @@ class TestUtils(object):
             utils.from_pretty_time('10S')
         with pytest.raises(ValueError):
             utils.from_pretty_time('10s1')
+        with pytest.raises(ValueError):
+            utils.from_pretty_time('10ss')

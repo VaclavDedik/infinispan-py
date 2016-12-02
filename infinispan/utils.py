@@ -26,8 +26,6 @@ def from_pretty_time(time):
     if not time_match:
         raise ValueError("Invalid time format")
     groups = time_match.groups()
-    if len(groups) != 2:
-        raise ValueError("Invalid time format")
     if groups[1] not in UNIT_CONVERSION_DICT:
         raise ValueError("Invalid time format unit '%s'", groups[1])
 
