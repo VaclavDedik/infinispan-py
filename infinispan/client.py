@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import threading
+
 from concurrent.futures import ThreadPoolExecutor
 
 from infinispan import hotrod
@@ -59,6 +61,8 @@ class Infinispan(object):
         self.val_serial = val_serial if val_serial else serial.JSONPickle()
 
         self.executor = ThreadPoolExecutor(max_workers=pool_size)
+
+        self._lock = threading.Lock()
 
     @sync_op
     def get(self, key):
@@ -149,7 +153,7 @@ class Infinispan(object):
         """Establishes connection with the server. If connection is already
         open, does not do anything."""
 
-        with self.conn.lock:
+        with self._lock:
             if not self.conn.connected:
                 self.conn.connect()
 
@@ -157,7 +161,7 @@ class Infinispan(object):
         """Closes connection with the server. If connection is already closed,
         does not do anything."""
 
-        with self.conn.lock:
+        with self._lock:
             if self.conn.connected:
                 self.conn.disconnect()
 

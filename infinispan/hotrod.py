@@ -157,7 +157,6 @@ class Protocol(object):
         self.lock = threading.Lock()
         self.conn = conn
         self._id = 0
-        self._resps = {}
 
     def send(self, request):
         """Sends a request to the server.
@@ -166,19 +165,17 @@ class Protocol(object):
         :return: Response from the server.
         """
 
-        # encode request and send it
+        # encode request
         req_id = self._get_next_id()
         request.header.id = req_id
         encoded_request = self.encode(request)
-        self.conn.send(encoded_request)
 
-        # wait until received the correct response
-        while req_id not in self._resps:
-            with self.conn.lock:
-                data = self.conn.recv()
-                response = self.decode(data)
-                self._resps[req_id] = response
-        return self._resps[req_id]
+        # send request and wait until received the correct response
+        with self.conn.context() as ctx:
+            ctx.send(encoded_request)
+            data = ctx.recv()
+            response = self.decode(data)
+        return response
 
     def encode(self, message):
         """Encodes a message (request or a response).
@@ -210,12 +207,6 @@ class Protocol(object):
                 "Response operation with code %s is not supported.", rh.op)
         self._decode(response, decoder, skip_fields=1)
 
-        # Terminate if data stream (has method send)
-        try:
-            if hasattr(data, "send"):
-                data.send(0)
-        except StopIteration:
-            pass
         return response
 
     def _encode(self, message, encoder):

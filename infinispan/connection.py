@@ -6,6 +6,7 @@ import threading
 import queue
 
 from infinispan import error
+from contextlib import contextmanager
 
 
 class SocketConnection(object):
@@ -14,7 +15,7 @@ class SocketConnection(object):
         self.port = port
         self.timeout = timeout
         self._s = None
-        self.lock = threading.Lock()
+        self._lock = threading.Lock()
 
     def connect(self):
         if self._s:
@@ -67,6 +68,14 @@ class SocketConnection(object):
         self._s.close()
         self._s = None
 
+    @contextmanager
+    def context(self):
+        try:
+            self._lock.acquire()
+            yield self
+        finally:
+            self._lock.release()
+
     @property
     def connected(self):
         return self._s is not None
@@ -100,40 +109,14 @@ class ConnectionPool(object):
         self._queue = queue.Queue()
         for conn in self._connections:
             self._queue.put(conn)
-        self.lock = threading.Semaphore(self.size)
 
     def connect(self):
         for conn in self._connections:
             conn.connect()
 
-    def send(self, byte_array):
-        conn = self._get_conn()
-        try:
-            conn.send(byte_array)
-        finally:
-            self._queue.task_done()
-            self._return_conn(conn)
-
-    def recv(self):
-        conn = self._get_conn()
-        data = conn.recv()
-        try:
-            n = yield next(data)
-            while n != 0:
-                n = yield data.send(n)
-        finally:
-            self._queue.task_done()
-            self._return_conn(conn)
-
     def disconnect(self):
         for conn in self._connections:
             conn.disconnect()
-
-    def _get_conn(self):
-        return self._queue.get(False)
-
-    def _return_conn(self, conn):
-        self._queue.put(conn, False)
 
     @property
     def available(self):
@@ -142,3 +125,11 @@ class ConnectionPool(object):
     @property
     def connected(self):
         return all(map(lambda c: c.connected, self._connections))
+
+    @contextmanager
+    def context(self):
+        try:
+            conn = self._queue.get()
+            yield conn
+        finally:
+            self._queue.put(conn)
