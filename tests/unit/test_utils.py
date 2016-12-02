@@ -16,6 +16,9 @@ class TestUtils(object):
         assert utils.from_pretty_time('10h') == (10, TimeUnits.HOURS)
         assert utils.from_pretty_time('10d') == (10, TimeUnits.DAYS)
 
+        assert utils.from_pretty_time('inf') == (None, TimeUnits.INFINITE)
+        assert utils.from_pretty_time('def') == (None, TimeUnits.DEFAULT)
+
     def test_from_pretty_time_invalid_format(self):
         with pytest.raises(ValueError):
             utils.from_pretty_time('10')
