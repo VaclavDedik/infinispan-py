@@ -95,7 +95,7 @@ class TestClient(object):
         assert value is None
 
     def test_put_to_different_cache(self, client):
-        client.cache_name = "namedCache"
+        client.cache_name = "memcachedCache"
         result = client.put("key2", "value2")
         value2 = client.get("key2")
         value1 = client.get("key1")

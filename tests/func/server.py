@@ -21,6 +21,8 @@ class InfinispanServer(object):
         self.version = version
         self.mode = mode
         self.process = None
+        if pytest.config.getoption("--domain"):
+            self.mode = Mode.DOMAIN
 
         this_dir = os.path.dirname(os.path.realpath(__file__))
         server_dir = os.path.join(this_dir, "server")
@@ -43,19 +45,13 @@ class InfinispanServer(object):
 
         self.process = subprocess.Popen(
             [launch_script], shell=True, preexec_fn=os.setsid)
-        if pytest.config.getoption("--waitlong"):
-            time.sleep(20)
-        else:
-            time.sleep(5)
+        time.sleep(self._get_wait_time())
 
     def stop(self):
         if not self.process:
             raise RuntimeError("Server is already stopped")
         os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
-        if pytest.config.getoption("--waitlong"):
-            time.sleep(3)
-        else:
-            time.sleep(1)
+        time.sleep(self._get_wait_time(start=False))
         self.process = None
 
     def kill(self):
@@ -63,3 +59,11 @@ class InfinispanServer(object):
             raise RuntimeError("Server is already stopped")
         os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)
         self.process = None
+
+    def _get_wait_time(self, start=True):
+        t = 5 if start else 2
+        if self.mode == Mode.DOMAIN:
+            t *= 4
+        if pytest.config.getoption("--waitlong"):
+            t *= 3
+        return t
