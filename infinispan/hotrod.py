@@ -3,8 +3,7 @@
 import threading
 
 from infinispan import messenger as m
-from infinispan import error
-from infinispan.codec import Encoder, Decoder
+from infinispan import codec
 
 
 class ClientIntelligence(object):
@@ -60,12 +59,24 @@ class RequestHeader(m.Message):
     t_id = m.Uvarint(default=0)
 
 
+class Host(m.Message):
+    ip = m.String(default="127.0.0.1")
+    port = m.Ushort(default=11211)
+
+
+class TopologyChangeHeader(m.Message):
+    id = m.Uvarint()
+    n = m.Uvarint()
+    hosts = m.List(of=Host, size=lambda s: s.n)
+
+
 class ResponseHeader(m.Message):
     magic = m.Byte(default=0xA1)
     id = m.Uvarlong()
     op = m.Byte()
     status = m.Byte(default=Status.OK)
     tcm = m.Byte(default=0)
+    tc = m.Composite(default=TopologyChangeHeader, condition=lambda s: s.tcm)
 
 
 class Request(m.Message):
@@ -157,6 +168,8 @@ class Protocol(object):
         self.lock = threading.Lock()
         self.conn = conn
         self._id = 0
+        self._decoder_f = codec.DecoderFactory()
+        self._encoder_f = codec.EncoderFactory()
 
     def send(self, request):
         """Sends a request to the server.
@@ -168,82 +181,16 @@ class Protocol(object):
         # encode request
         req_id = self._get_next_id()
         request.header.id = req_id
-        encoded_request = self.encode(request)
+        encoder = self._encoder_f.get()
+        encoded_request = encoder.encode(request)
 
         # send request and wait until received the correct response
         with self.conn.context() as ctx:
             ctx.send(encoded_request)
             data = ctx.recv()
-            response = self.decode(data)
+            decoder = self._decoder_f.get()
+            response = decoder.decode(data)
         return response
-
-    def encode(self, message):
-        """Encodes a message (request or a response).
-
-        :param message: Response or Request object you want to encode.
-        :return: Byte array which represents the encoded message.
-        """
-
-        return self._encode(message, Encoder()).result()
-
-    def decode(self, data):
-        """Decodes a response from a byte array.
-
-        :param data: Byte array that represents the response.
-        :return: Response object.
-        """
-
-        rh = ResponseHeader()
-        decoder = Decoder(data)
-        decoder = self._decode(rh, decoder)
-
-        response = None
-        for resp_cls in Response.__subclasses__():
-            if hasattr(resp_cls, 'OP_CODE') and resp_cls.OP_CODE == rh.op:
-                response = resp_cls(header=rh)
-
-        if response is None:
-            raise error.DecodeError(
-                "Response operation with code %s is not supported.", rh.op)
-        self._decode(response, decoder, skip_fields=1)
-
-        return response
-
-    def _encode(self, message, encoder):
-        for f_name in message.fields:
-            f = getattr(message, f_name)
-            f_cls = getattr(message.__class__, f_name)
-
-            # test if field is available only under condition
-            if hasattr(f_cls, 'condition') and not f_cls.condition(message):
-                continue
-            # test if field is none and raise an error if so (unless optional)
-            if f is None and \
-                    not (hasattr(f_cls, 'optional') and f_cls.optional):
-                raise error.EncodeError(
-                    "Field '%s' of '%s#%s' must not be None",
-                    f, type(message).__name__, f_name)
-
-            if f_cls.type == "composite":
-                encoder = self._encode(f, encoder)
-            else:
-                getattr(encoder, f_cls.type)(f)
-        return encoder
-
-    def _decode(self, message, decoder, skip_fields=0):
-        for f_name in message.fields[skip_fields:]:
-            f = getattr(message, f_name)
-            f_cls = getattr(message.__class__, f_name)
-
-            if 'condition' in dir(f_cls) and not f_cls.condition(message):
-                continue
-
-            if f_cls.type == "composite":
-                decoder = self._decode(f, decoder)
-            else:
-                decoded = getattr(decoder, f_cls.type)()
-                setattr(message, f_name, decoded)
-        return decoder
 
     def _get_next_id(self):
         with self.lock:

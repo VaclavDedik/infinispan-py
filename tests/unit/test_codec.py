@@ -2,7 +2,7 @@
 
 import pytest
 
-from infinispan import codec, error
+from infinispan import codec, error, hotrod
 
 
 class TestEncoder(object):
@@ -29,6 +29,13 @@ class TestEncoder(object):
         byte2 = [0x07, 0x06]
         expected = b'\x76'
         actual = encoder.splitbyte(byte2).result()
+
+        assert expected == actual
+
+    def test_encode_ushort(self, encoder):
+        short = 11211
+        expected = b'\x2b\xcb'
+        actual = encoder.ushort(short).result()
 
         assert expected == actual
 
@@ -70,6 +77,33 @@ class TestEncoder(object):
 
         assert expected == actual
 
+    def test_encode(self, encoder):
+        rh = hotrod.RequestHeader(id=3, op=0x01)
+        expected = b'\xa0\x03\x19\x01\x00\x00\x01\x00'
+        actual = encoder.encode(rh)
+
+        assert expected == actual
+
+    def test_decode_with_list(self, encoder):
+        expected = b'\xa1\x03\x04\x00\x01\x03\x02' + \
+            b'\t127.0.0.1,l\t127.0.0.1+\xd6\x04ahoj'
+        response = hotrod.GetResponse(
+            header=hotrod.ResponseHeader(
+                id=3, tcm=1, tc=hotrod.TopologyChangeHeader(
+                    id=3, n=2, hosts=[
+                        hotrod.Host(ip='127.0.0.1', port=11372),
+                        hotrod.Host(ip='127.0.0.1', port=11222)
+                    ])),
+            value=b'ahoj')
+        actual = encoder.encode(response)
+
+        assert expected == actual
+
+    def test_encode_fail_all_values_not_set(self, encoder):
+        with pytest.raises(error.EncodeError):
+            rh = hotrod.RequestHeader()
+            encoder.encode(rh)
+
 
 class TestDecoder(object):
 
@@ -91,6 +125,13 @@ class TestDecoder(object):
         byte2 = iter('\x76')
         expected = [0x07, 0x06]
         actual = codec.Decoder(byte2).splitbyte()
+
+        assert expected == actual
+
+    def test_decode_ushort(self):
+        short = iter('\x2b\xcb')
+        expected = 11211
+        actual = codec.Decoder(short).ushort()
 
         assert expected == actual
 
@@ -135,3 +176,47 @@ class TestDecoder(object):
     def test_decode_empty_byte(self):
         with pytest.raises(error.DecodeError):
             codec.Decoder(iter([''])).byte()
+
+    def test_decode(self):
+        data = iter('\xa1\x03\x04\x00\x00\x04ahoj')
+        expected = hotrod.GetResponse(
+            header=hotrod.ResponseHeader(id=3), value=b'ahoj')
+        actual = codec.Decoder().decode(data)
+
+        assert expected.header.magic == actual.header.magic
+        assert expected.header.id == actual.header.id
+        assert expected.header.op == actual.header.op
+        assert expected.header.status == actual.header.status
+        assert expected.header.tcm == actual.header.tcm
+        assert expected.value == actual.value
+
+    def test_decode_with_list(self):
+        data = iter(
+            '\xa1\x03\x04\x00\x01\x03\x02' +
+            '\t127.0.0.1,l\t127.0.0.1+\xd6\x04ahoj'
+        )
+        expected = hotrod.GetResponse(
+            header=hotrod.ResponseHeader(
+                id=3, tcm=1, tc=hotrod.TopologyChangeHeader(
+                    id=3, n=2, hosts=[
+                        hotrod.Host(ip='127.0.0.1', port=11372),
+                        hotrod.Host(ip='127.0.0.1', port=11222)
+                    ])),
+            value=b'ahoj')
+        actual = codec.Decoder().decode(data)
+
+        assert expected.header.magic == actual.header.magic
+        assert expected.header.id == actual.header.id
+        assert expected.header.op == actual.header.op
+        assert expected.header.status == actual.header.status
+        assert expected.header.tcm == actual.header.tcm
+        assert expected.value == actual.value
+
+        assert expected.header.tc.id == actual.header.tc.id
+        assert expected.header.tc.n == actual.header.tc.n
+        assert expected.header.tc.hosts[0].ip == actual.header.tc.hosts[0].ip
+        assert expected.header.tc.hosts[0].port \
+            == actual.header.tc.hosts[0].port
+        assert expected.header.tc.hosts[1].ip == actual.header.tc.hosts[1].ip
+        assert expected.header.tc.hosts[1].port \
+            == actual.header.tc.hosts[1].port

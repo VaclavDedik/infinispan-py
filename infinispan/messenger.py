@@ -52,6 +52,10 @@ class Composite(DataType):
     pass
 
 
+class List(DataType):
+    pass
+
+
 class Byte(DataType):
     pass
 
@@ -61,6 +65,10 @@ class Bytes(DataType):
 
 
 class SplitByte(DataType):
+    pass
+
+
+class Ushort(DataType):
     pass
 
 

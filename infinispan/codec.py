@@ -4,12 +4,47 @@ import struct
 
 from builtins import bytes
 
+import infinispan
+
 from infinispan import error
 
 
 class Encoder(object):
     def __init__(self, byte_array=bytes()):
         self._byte_array = byte_array
+
+    def encode(self, message):
+        """Encodes a message (request or a response).
+
+        :param message: Message you want to encode.
+        :return: Byte array which represents the encoded message.
+        """
+
+        return self._encode(message).result()
+
+    def _encode(self, message):
+        for f_name in message.fields:
+            f = getattr(message, f_name)
+            f_cls = getattr(message.__class__, f_name)
+
+            # test if field is available only under condition
+            if hasattr(f_cls, 'condition') and not f_cls.condition(message):
+                continue
+            # test if field is none and raise an error if so (unless optional)
+            if f is None and \
+                    not (hasattr(f_cls, 'optional') and f_cls.optional):
+                raise error.EncodeError(
+                    "Field '%s' of '%s#%s' must not be None",
+                    f, type(message).__name__, f_name)
+
+            if f_cls.type == "composite":
+                self._encode(f)
+            elif f_cls.type == "list":
+                for elem in f:
+                    self._encode(elem)
+            else:
+                getattr(self, f_cls.type)(f)
+        return self
 
     def byte(self, b):
         self._append(struct.pack('>B', b))
@@ -22,6 +57,10 @@ class Encoder(object):
 
     def splitbyte(self, b2):
         self.byte((b2[0] << 4) + b2[1])
+        return self
+
+    def ushort(self, ushort):
+        self._append(struct.pack('>H', ushort))
         return self
 
     def uvarint(self, uvarint):
@@ -64,8 +103,52 @@ class Encoder(object):
 
 
 class Decoder(object):
-    def __init__(self, byte_gen):
+    def __init__(self, byte_gen=None):
         self._byte_gen = byte_gen
+
+    def decode(self, data):
+        """Decodes a response from a byte array.
+
+        :param data: Byte array that represents the response.
+        :return: Response object.
+        """
+
+        rh = infinispan.hotrod.ResponseHeader()
+        self._byte_gen = data
+        self._decode(rh)
+
+        response = None
+        for resp_cls in infinispan.hotrod.Response.__subclasses__():
+            if hasattr(resp_cls, 'OP_CODE') and resp_cls.OP_CODE == rh.op:
+                response = resp_cls(header=rh)
+
+        if response is None:
+            raise error.DecodeError(
+                "Response operation with code %s is not supported.", rh.op)
+        self._decode(response, skip_fields=1)
+
+        return response
+
+    def _decode(self, message, skip_fields=0):
+        for f_name in message.fields[skip_fields:]:
+            f = getattr(message, f_name)
+            f_cls = getattr(message.__class__, f_name)
+
+            if 'condition' in dir(f_cls) and not f_cls.condition(message):
+                continue
+
+            if f_cls.type == "composite":
+                self._decode(f)
+            elif f_cls.type == "list":
+                l = []
+                for _ in range(f_cls.size(message)):
+                    elem = f_cls.of()
+                    l.append(elem)
+                    self._decode(elem)
+                setattr(message, f_name, l)
+            else:
+                decoded = getattr(self, f_cls.type)()
+                setattr(message, f_name, decoded)
 
     def byte(self):
         b = ord(self._read_next())
@@ -77,6 +160,9 @@ class Decoder(object):
         for i in range(n):
             byte_array += bytes([self.byte()])
         return byte_array
+
+    def ushort(self):
+        return (self.byte() << 8) + self.byte()
 
     def splitbyte(self):
         b = self.byte()
@@ -113,3 +199,13 @@ class Decoder(object):
         if not byte:
             raise error.DecodeError("Value is empty")
         return byte
+
+
+class EncoderFactory(object):
+    def get(self):
+        return Encoder()
+
+
+class DecoderFactory(object):
+    def get(self):
+        return Decoder()
