@@ -56,10 +56,10 @@ class Infinispan(object):
         :param val_serial: Same as key_serial, but for value.
         """
 
-        self.conn = connection.ConnectionPool(connections=[
+        conn = connection.ConnectionPool(connections=[
             connection.SocketConnection(host, port, timeout=timeout)
             for _ in range(pool_size)])
-        self.protocol = hotrod.Protocol(self.conn)
+        self.protocol = hotrod.Protocol(conn)
         self.cache_name = cache_name
 
         self.key_serial = key_serial if key_serial else serial.JSONPickle()
@@ -159,19 +159,19 @@ class Infinispan(object):
         open, does not do anything."""
 
         with self._lock:
-            if not self.conn.connected:
-                self.conn.connect()
+            if not self.protocol.conn.connected:
+                self.protocol.conn.connect()
 
     def disconnect(self):
         """Closes connection with the server. If connection is already closed,
         does not do anything."""
 
         with self._lock:
-            if self.conn.connected:
-                self.conn.disconnect()
+            if self.protocol.conn.connected:
+                self.protocol.conn.disconnect()
 
     def _send(self, req):
-        if not self.conn.connected:
+        if not self.protocol.conn.connected:
             self.connect()
 
         req.header.cname = self.cache_name

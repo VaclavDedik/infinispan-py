@@ -84,7 +84,7 @@ class TestEncoder(object):
 
         assert expected == actual
 
-    def test_decode_with_list(self, encoder):
+    def test_encode_with_list(self, encoder):
         expected = b'\xa1\x03\x04\x00\x01\x03\x02' + \
             b'\t127.0.0.1,l\t127.0.0.1+\xd6\x04ahoj'
         response = hotrod.GetResponse(

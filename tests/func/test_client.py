@@ -111,8 +111,8 @@ class TestClient(object):
 
     def test_context_manager(self):
         with Infinispan() as client:
-            assert client.conn.connected is True
-        assert client.conn.connected is False
+            assert client.protocol.conn.connected is True
+        assert client.protocol.conn.connected is False
 
     def test_async(self, client):
         f = client.put_async("test_async", "value")
