@@ -87,18 +87,16 @@ class TestConnectionPool(object):
             conn.disconnect()
 
         def test_successful_connection(self, conn):
-            assert conn.available == 3
+            assert conn.size == 3
             with conn.context() as ctx:
-                assert conn.available == 2
                 ctx.send(b'\xa0\x01\x19\x17\x00\x00\x01\x00')
                 data = ctx.recv()
                 assert next(data) == b'\xa1' and next(data) == b'\x01'
 
-            assert conn.available == 3
+            assert conn.size == 3
             with conn.context() as ctx:
-                assert conn.available == 2
                 ctx.send(b'\xa0\x02\x19\x17\x00\x00\x01\x00')
                 data = ctx.recv()
                 assert next(data) == b'\xa1' and next(data) == b'\x02'
 
-            assert conn.available == 3
+            assert conn.size == 3

@@ -59,7 +59,7 @@ class Infinispan(object):
         conn = connection.ConnectionPool(connections=[
             connection.SocketConnection(host, port, timeout=timeout)
             for _ in range(pool_size)])
-        self.protocol = hotrod.Protocol(conn)
+        self.protocol = hotrod.Protocol(conn, timeout=timeout)
         self.cache_name = cache_name
 
         self.key_serial = key_serial if key_serial else serial.JSONPickle()
@@ -179,14 +179,7 @@ class Infinispan(object):
 
         # Test if not an error response
         if isinstance(resp, hotrod.ErrorResponse):
-            if resp.header.status in [Status.UNKNOWN_CMD,
-                                      Status.UNKNOWN_VERSION,
-                                      Status.PARSING_ERR]:
-                raise error.ClientError(resp.error_message, resp)
-            elif resp.header.status in [Status.SERVER_ERR, Status.CMD_TIMEOUT]:
-                raise error.ServerError(resp.error_message, resp)
-            else:
-                raise error.ResponseError(resp.error_message, resp)
+            raise error.ClientError(resp.error_message, resp)
 
         return resp
 

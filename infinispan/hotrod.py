@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import time
 import threading
 
 from infinispan import messenger as m
 from infinispan import codec
+from infinispan import error
 
 
 class ClientIntelligence(object):
@@ -158,7 +160,7 @@ class ContainsKeyResponse(Response):
 class Protocol(object):
     """Low level API that sends requests and blocks until response received."""
 
-    def __init__(self, conn):
+    def __init__(self, conn, timeout=10):
         """Creates new protocol instance.
 
         :param conn: Connection, you need to open the connection yourself
@@ -167,7 +169,9 @@ class Protocol(object):
         """
         self.lock = threading.Lock()
         self.conn = conn
+        self.timeout = timeout
         self._id = 0
+        self._responses = {}
         self._decoder_f = codec.DecoderFactory()
         self._encoder_f = codec.EncoderFactory()
 
@@ -190,9 +194,20 @@ class Protocol(object):
             data = ctx.recv()
             decoder = self._decoder_f.get()
             response = decoder.decode(data)
-        return response
+            if response.header.status == Status.SERVER_ERR:
+                raise error.ServerError(response.error_message, response)
+            self._responses[response.header.id] = response
+
+        mustend = time.time() + self.timeout
+        while req_id not in self._responses:
+            time.sleep(0.005)
+            if time.time() > mustend:
+                raise error.ServerError("Timeout.")
+        return self._responses[req_id]
 
     def _get_next_id(self):
         with self.lock:
+            if self._id > 9223372036854775808:
+                self._id = 0
             self._id += 1
             return self._id

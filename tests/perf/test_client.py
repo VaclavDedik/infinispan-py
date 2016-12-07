@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import time
+import struct
 import pytest
 
 from mock import MagicMock
+from collections import deque
 
 from infinispan.client import Infinispan
 from infinispan import connection
@@ -51,6 +53,7 @@ class TestClientWithMockConnection(object):
 
     def _new_conn(self):
         conn = connection.SocketConnection()
+        conn._ids = deque([])
 
         def connect():
             conn._s = MagicMock()
@@ -58,14 +61,17 @@ class TestClientWithMockConnection(object):
 
         def send(byte_array):
             time.sleep(0.001)
+            bts = byte_array[1:len(byte_array)-6]
+            conn._ids.append(bts)
         conn.send = send
 
         def recv():
             time.sleep(0.002)
-            result = iter(b'\xa1\x01\x18\x00\x00')
+            r = b'\xa1' + conn._ids.popleft() + b'\x18\x00\x00'
+            result = iter(r)
             while True:
                 time.sleep(0.0001)
-                yield next(result)
+                yield struct.pack(">B", next(result))
         conn.recv = recv
 
         return conn

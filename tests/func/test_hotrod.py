@@ -69,11 +69,12 @@ class TestHotrod(object):
     def test_error_unknown_version(self, protocol):
         request = hotrod.GetRequest(
             header=hotrod.RequestHeader(version=19), key=b"test")
-        response = protocol.send(request)
+        with pytest.raises(error.ServerError) as excinfo:
+            protocol.send(request)
 
-        assert response.header.op == hotrod.ErrorResponse.OP_CODE
+        assert excinfo.value.response.header.op == hotrod.ErrorResponse.OP_CODE
         # Should actually be unknown version, there is a bug in infinispan tho
-        assert response.header.status == Status.SERVER_ERR
+        assert excinfo.value.response.header.status == Status.SERVER_ERR
 
     def test_error_server_shutdown(self, protocol):
         TestHotrod.server.stop()

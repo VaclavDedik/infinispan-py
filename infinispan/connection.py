@@ -3,7 +3,8 @@
 import time
 import socket
 import threading
-import queue
+
+from collections import deque
 
 from infinispan import error
 from contextlib import contextmanager
@@ -42,6 +43,7 @@ class SocketConnection(object):
     def recv(self):
         if not self._s:
             raise error.ConnectionError("Not connected.")
+        self._lock.acquire()
 
         n = 1
         while n != 0:
@@ -56,6 +58,7 @@ class SocketConnection(object):
             n = yield packet
             # must test for None as 0 is termination
             n = n if n is not None else 1
+        self._lock.release()
 
     def disconnect(self):
         if not self._s:
@@ -71,10 +74,10 @@ class SocketConnection(object):
     @contextmanager
     def context(self):
         try:
-            self._lock.acquire()
             yield self
         finally:
-            self._lock.release()
+            if self._lock.locked():
+                self._lock.release()
 
     @property
     def connected(self):
@@ -105,10 +108,8 @@ class SocketConnection(object):
 class ConnectionPool(object):
     def __init__(self, connections=[]):
         self._connections = connections
-        self.size = len(self._connections)
-        self._queue = queue.Queue()
-        for conn in self._connections:
-            self._queue.put(conn)
+        self._lock = threading.Lock()
+        self._curr = 0
 
     def connect(self):
         for conn in self._connections:
@@ -119,17 +120,26 @@ class ConnectionPool(object):
             conn.disconnect()
 
     @property
-    def available(self):
-        return self._queue.qsize()
-
-    @property
     def connected(self):
         return all(map(lambda c: c.connected, self._connections))
 
+    @property
+    def size(self):
+        return len(self._connections)
+
     @contextmanager
     def context(self):
+        conn = self._get_next()
         try:
-            conn = self._queue.get()
             yield conn
         finally:
-            self._queue.put(conn)
+            if conn._lock.locked():
+                conn._lock.release()
+
+    def _get_next(self):
+        with self._lock:
+            if self._curr >= self.size - 1:
+                self._curr = 0
+            else:
+                self._curr += 1
+            return self._connections[self._curr]
