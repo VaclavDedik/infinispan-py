@@ -3,4 +3,5 @@
 /tests/func/server
 .venv
 .venv3
+.venvpy
 .coverage
