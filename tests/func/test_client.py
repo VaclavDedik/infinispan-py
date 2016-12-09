@@ -3,12 +3,12 @@
 import pytest
 import time
 
-from .server import InfinispanServer
+from .server import InfinispanServer, Mode
 from infinispan.client import Infinispan
 from infinispan import error
 
 
-class TestClient(object):
+class TestClientStandalone(object):
     @classmethod
     def setup_class(cls):
         cls.server = InfinispanServer()
@@ -120,3 +120,29 @@ class TestClient(object):
 
         assert f.result() is None
         assert client.get("test_async") == "value"
+
+
+class TestClientDomain(object):
+    @classmethod
+    def setup_class(cls):
+        cls.server = InfinispanServer(mode=Mode.DOMAIN)
+        cls.server.start()
+
+    @classmethod
+    def teardown_class(cls):
+        try:
+            cls.server.stop()
+        except RuntimeError:
+            # is ok, already stopped
+            pass
+
+    @pytest.yield_fixture
+    def client(self):
+        client = Infinispan()
+        yield client
+        client.disconnect()
+
+    def test_ping_with_topology_change(self, client):
+        assert client.protocol.conn.size == 1
+        assert client.ping()
+        assert client.protocol.conn.size == 2

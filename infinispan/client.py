@@ -10,7 +10,7 @@ from infinispan import error
 from infinispan import utils
 from infinispan import serial
 from infinispan.async import generate_async, sync_op
-from infinispan.hotrod import Status, Flag
+from infinispan.hotrod import Status, Flag, ClientIntelligence
 
 
 @generate_async
@@ -54,10 +54,12 @@ class Infinispan(object):
                           async operations.
         """
 
+        self.conn_type = connection.SocketConnection
         conn = connection.ConnectionPool(connections=[
-            connection.SocketConnection(host, port, timeout=timeout)])
+            self.conn_type(host, port, timeout=timeout)])
         self.protocol = hotrod.Protocol(conn, timeout=timeout)
         self.cache_name = cache_name
+        self.ci = ClientIntelligence.TOPOLOGY
 
         self.key_serial = key_serial if key_serial else serial.JSONPickle()
         self.val_serial = val_serial if val_serial else serial.JSONPickle()
@@ -65,6 +67,7 @@ class Infinispan(object):
         self.executor = ThreadPoolExecutor(max_workers=pool_size)
 
         self._lock = threading.Lock()
+        self._curr_topology_id = 0
 
     @sync_op
     def get(self, key):
@@ -172,13 +175,28 @@ class Infinispan(object):
             self.connect()
 
         req.header.cname = self.cache_name
+        req.header.ci = self.ci
+        req.header.t_id = self._curr_topology_id
         resp = self.protocol.send(req)
 
         # Test if not an error response
         if isinstance(resp, hotrod.ErrorResponse):
             raise error.ClientError(resp.error_message, resp)
 
+        # Test if topology changed:
+        if resp.header.tcm:
+            self._handle_topology_change(resp)
+
         return resp
+
+    def _handle_topology_change(self, response):
+        with self._lock:
+            if response.header.tc.id != self._curr_topology_id:
+                self._curr_topology_id = response.header.tc.id
+                conns = [self.conn_type(host.ip, host.port,
+                                        timeout=self.protocol.timeout)
+                         for host in response.header.tc.hosts]
+                self.protocol.conn.update(conns)
 
     def __enter__(self):
         self.connect()

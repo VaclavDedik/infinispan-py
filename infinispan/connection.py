@@ -102,20 +102,43 @@ class SocketConnection(object):
                     delay *= 2
         return packet
 
+    def __hash__(self):
+        return hash((self.host, self.port))
+
+    def __eq__(self, other):
+        return (self.host, self.port) == (other.host, other.port)
+
+    def __ne__(self, other):
+        return not(self == other)
+
 
 class ConnectionPool(object):
-    def __init__(self, connections=[]):
-        self._connections = connections
+    def __init__(self, connections=None):
+        self._connections = connections if (connections is not None) else []
         self._lock = threading.Lock()
         self._curr = 0
 
     def connect(self):
         for conn in self._connections:
-            conn.connect()
+            if not conn.connected:
+                conn.connect()
 
     def disconnect(self):
         for conn in self._connections:
-            conn.disconnect()
+            if conn.connect:
+                conn.disconnect()
+
+    def update(self, connections):
+        conns_to_remove = list(self._connections)
+        for conn in connections:
+            if conn not in self._connections:
+                self._connections.append(conn)
+            else:
+                conns_to_remove.remove(conn)
+        for conn_to_remove in conns_to_remove:
+            self._connections.remove(conn_to_remove)
+            if conn_to_remove.connected:
+                conn_to_remove.disconnect()
 
     @property
     def connected(self):
