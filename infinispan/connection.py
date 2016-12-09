@@ -46,7 +46,7 @@ class SocketConnection(object):
         n = 1
         while n != 0:
             try:
-                packet = self._read_packet(n, self.timeout)
+                packet = self._read_packet(n)
             except socket.error:
                 raise error.ConnectionError(
                     "Connection reset by peer.")
@@ -81,10 +81,10 @@ class SocketConnection(object):
     def connected(self):
         return self._s is not None
 
-    def _read_packet(self, n, timeout):
+    def _read_packet(self, n):
         packet = None
         delay = 50.0 / 1000.0
-        curr_time = time.time()
+        mustend = time.time() + self.timeout
         try_again = True
         while try_again:
             try_again = False
@@ -95,7 +95,7 @@ class SocketConnection(object):
                     raise ex
                 try_again = True
 
-                if time.time() - curr_time > timeout:
+                if time.time() > mustend:
                     raise error.ConnectionError("Connection timeout.")
                 time.sleep(delay)
                 if delay < 0.4:
