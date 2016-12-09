@@ -49,16 +49,13 @@ class Infinispan(object):
                            class :class:`infinispan.serial.Serialization`.
                            By default, :class:`infinispan.serial.JSONPickle` is
                            used.
-        :param pool_size: Size of the connection pool that is used for sending
-                          and receiving data from Infinispan server. Also
-                          determines the thread pool size that is used for
-                          async operations.
         :param val_serial: Same as key_serial, but for value.
+        :param pool_size: Determines the thread pool size that is used for
+                          async operations.
         """
 
         conn = connection.ConnectionPool(connections=[
-            connection.SocketConnection(host, port, timeout=timeout)
-            for _ in range(pool_size)])
+            connection.SocketConnection(host, port, timeout=timeout)])
         self.protocol = hotrod.Protocol(conn, timeout=timeout)
         self.cache_name = cache_name
 
