@@ -3,6 +3,8 @@
 import time
 import threading
 
+from collections import OrderedDict
+
 from infinispan import messenger as m
 from infinispan import codec
 from infinispan import error
@@ -171,7 +173,7 @@ class Protocol(object):
         self.conn = conn
         self.timeout = timeout
         self._id = 0
-        self._responses = {}
+        self._responses = OrderedDict()
         self._decoder_f = codec.DecoderFactory()
         self._encoder_f = codec.EncoderFactory()
 
@@ -194,16 +196,33 @@ class Protocol(object):
             data = ctx.recv()
             decoder = self._decoder_f.get()
             response = decoder.decode(data)
-            if response.header.status == Status.SERVER_ERR:
-                raise error.ServerError(response.error_message, response)
-            self._responses[response.header.id] = response
+            self._cache_resp(response)
 
         mustend = time.time() + self.timeout
         while req_id not in self._responses:
+            # if there is an error response in the cache, raise an error
+            err_resp = self._pop_resp(0)
+            if err_resp:
+                raise error.ServerError(err_resp.error_message, err_resp)
+
             time.sleep(0.005)
             if time.time() > mustend:
-                raise error.ServerError("Timeout.")
-        return self._responses[req_id]
+                raise error.ConnectionError("Timeout.")
+        return self._pop_resp(req_id)
+
+    def _cache_resp(self, response):
+        with self.lock:
+            if len(self._responses) > 100:
+                self._responses = dict(
+                    self._responses.items()[:len(self._responses)/2])
+            self._responses[response.header.id] = response
+
+    def _pop_resp(self, id):
+        with self.lock:
+            if id in self._responses:
+                resp = self._responses[id]
+                del self._responses[id]
+                return resp
 
     def _get_next_id(self):
         with self.lock:

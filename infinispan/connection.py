@@ -4,8 +4,6 @@ import time
 import socket
 import threading
 
-from collections import deque
-
 from infinispan import error
 from contextlib import contextmanager
 
