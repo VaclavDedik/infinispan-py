@@ -10,7 +10,7 @@ from infinispan import connection
 from infinispan import error
 from infinispan import utils
 from infinispan import serial
-from infinispan.async import generate_async, sync_op
+from infinispan.async import generate_async, op
 from infinispan.hotrod import Status, Flag, ClientIntelligence
 
 log = logging.getLogger(__name__)
@@ -77,7 +77,7 @@ class Infinispan(object):
         self._lock = threading.Lock()
         self._curr_topology_id = 0
 
-    @sync_op
+    @op
     def get(self, key):
         """Sends a request to Infinispan server asking for a value by key.
 
@@ -89,7 +89,7 @@ class Infinispan(object):
         resp = self._send(req)
         return self.val_serial.deserialize(resp.value)
 
-    @sync_op
+    @op
     def get_with_version(self, key):
         """Sends a request to Infinispan server asking for a value with version
         by key.
@@ -103,7 +103,7 @@ class Infinispan(object):
         resp = self._send(req)
         return self.val_serial.deserialize(resp.value), resp.version
 
-    @sync_op
+    @op
     def put(self, key, value, lifespan=None, max_idle=None, previous=False):
         """Creates new key-value pair on the Infinispan server.
 
@@ -134,7 +134,7 @@ class Infinispan(object):
                           previous=previous)
         return self.val_serial.deserialize(resp.prev_value)
 
-    @sync_op
+    @op
     def put_if_absent(self, key, value, lifespan=None, max_idle=None,
                       previous=False):
         """Creates new key-value pair on the Infinispan server if absent.
@@ -162,7 +162,7 @@ class Infinispan(object):
         else:
             return resp.header.status == Status.OK
 
-    @sync_op
+    @op
     def replace(self, key, value, lifespan=None, max_idle=None,
                 previous=False):
         """Replaces existing key-value pair on the Infinispan server if absent.
@@ -190,7 +190,7 @@ class Infinispan(object):
         else:
             return resp.header.status == Status.OK
 
-    @sync_op
+    @op
     def contains_key(self, key):
         """Returns whether the key is stored on the server.
 
@@ -201,7 +201,7 @@ class Infinispan(object):
         resp = self._send(req)
         return resp.header.status == Status.OK
 
-    @sync_op
+    @op
     def remove(self, key, previous=False):
         """Removes key and it's associated value from the server.
 
@@ -214,7 +214,7 @@ class Infinispan(object):
         resp = self._send(req, previous=previous)
         return self.val_serial.deserialize(resp.prev_value)
 
-    @sync_op
+    @op
     def ping(self):
         """Pings the server to test the connection.
 

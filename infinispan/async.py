@@ -14,6 +14,6 @@ def generate_async(cls):
     return cls
 
 
-def sync_op(method):
+def op(method):
     method.sync_op = True
     return method
