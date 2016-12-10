@@ -20,8 +20,15 @@ class TestEncoder(object):
 
     def test_encode_bytes(self, encoder):
         bytes_ = b'ahoj\x76'
+        expected = b'ahoj\x76'
+        actual = encoder.bytes(bytes_, 5).result()
+
+        assert expected == actual
+
+    def test_encode_varbytes(self, encoder):
+        bytes_ = b'ahoj\x76'
         expected = b'\x05ahoj\x76'
-        actual = encoder.bytes(bytes_).result()
+        actual = encoder.varbytes(bytes_).result()
 
         assert expected == actual
 
@@ -115,9 +122,16 @@ class TestDecoder(object):
         assert expected == actual
 
     def test_decode_bytes(self):
+        bytes_ = iter('ahoj\x76')
+        expected = b'ahoj\x76'
+        actual = codec.Decoder(bytes_).bytes(5)
+
+        assert expected == actual
+
+    def test_decode_varbytes(self):
         bytes_ = iter('\x05ahoj\x76')
         expected = b'ahoj\x76'
-        actual = codec.Decoder(bytes_).bytes()
+        actual = codec.Decoder(bytes_).varbytes()
 
         assert expected == actual
 

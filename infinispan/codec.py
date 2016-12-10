@@ -43,16 +43,21 @@ class Encoder(object):
                 for elem in f:
                     self._encode(elem)
             else:
-                getattr(self, f_cls.type)(f)
+                getattr(self, f_cls.type)(f, *f_cls.args)
         return self
 
     def byte(self, b):
         self._append(struct.pack('>B', b))
         return self
 
-    def bytes(self, byte_array):
-        self.uvarint(len(byte_array))
+    def bytes(self, byte_array, size):
         self._append(byte_array)
+        return self
+
+    def varbytes(self, byte_array):
+        n = len(byte_array)
+        self.uvarint(n)
+        self.bytes(byte_array, n)
         return self
 
     def splitbyte(self, b2):
@@ -79,7 +84,7 @@ class Encoder(object):
 
     def string(self, string):
         if string:
-            self.bytes(string.encode("UTF-8"))
+            self.varbytes(string.encode("UTF-8"))
         else:
             self.byte(0x00)
         return self
@@ -150,19 +155,22 @@ class Decoder(object):
                     self._decode(elem)
                 setattr(message, f_name, l)
             else:
-                decoded = getattr(self, f_cls.type)()
+                decoded = getattr(self, f_cls.type)(*f_cls.args)
                 setattr(message, f_name, decoded)
 
     def byte(self):
         b = ord(self._read_next())
         return b
 
-    def bytes(self):
-        n = self.uvarint()
+    def bytes(self, size):
         byte_array = bytes()
-        for i in range(n):
+        for i in range(size):
             byte_array += bytes([self.byte()])
         return byte_array
+
+    def varbytes(self):
+        n = self.uvarint()
+        return self.bytes(n)
 
     def ushort(self):
         return (self.byte() << 8) + self.byte()
@@ -179,7 +187,7 @@ class Decoder(object):
         return self._uvar(maxlen=9)
 
     def string(self):
-        return self.bytes().decode('UTF-8')
+        return self.varbytes().decode('UTF-8')
 
     def _uvar(self, maxlen=5):
         b = self.byte()

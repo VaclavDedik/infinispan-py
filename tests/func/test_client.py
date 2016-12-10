@@ -41,6 +41,23 @@ class TestClientStandalone(object):
 
         assert value == "value1"
 
+    def test_get_non_existing(self, client):
+        value = client.get("notexisting")
+
+        assert value is None
+
+    def test_get_with_version(self, client):
+        value, version = client.get_with_version("key1")
+
+        assert value == "value1"
+        assert version == b'\x00\x00\x00\x00\x00\x00\x00\x01'
+
+    def test_get_with_version_non_existing(self, client):
+        value, version = client.get_with_version("nonexisting")
+
+        assert value is None
+        assert version is None
+
     def test_put_with_lifespan(self, client):
         result = client.put("key2", "value2", lifespan='2s')
         assert result is None
@@ -128,11 +145,6 @@ class TestClientStandalone(object):
         assert client.contains_key("key1") is False
         client.put("key1", "value1")
         assert client.contains_key("key1") is True
-
-    def test_get_non_existing(self, client):
-        value = client.get("notexisting")
-
-        assert value is None
 
     def test_put_to_different_cache(self, client):
         client.cache_name = "memcachedCache"

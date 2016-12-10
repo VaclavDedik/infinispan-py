@@ -105,29 +105,29 @@ class Response(m.Message):
 
 class PutRequest(Request):
     OP_CODE = 0x01
-    key = m.Bytes()
+    key = m.Varbytes()
     tunits = m.SplitByte(default=[TimeUnits.DEFAULT, TimeUnits.DEFAULT])
     lifespan = m.Uvarint(default=10, condition=lambda s: s.tunits[0] not in
                          [TimeUnits.DEFAULT, TimeUnits.INFINITE])
     max_idle = m.Uvarint(default=10, condition=lambda s: s.tunits[1] not in
                          [TimeUnits.DEFAULT, TimeUnits.INFINITE])
-    value = m.Bytes()
+    value = m.Varbytes()
 
 
 class PutResponse(Response):
     OP_CODE = 0x02
-    prev_value = m.Bytes(
+    prev_value = m.Varbytes(
         condition=lambda s: s.header.status == Status.OK_WITH_VALUE)
 
 
 class GetRequest(Request):
     OP_CODE = 0x03
-    key = m.Bytes()
+    key = m.Varbytes()
 
 
 class GetResponse(Response):
     OP_CODE = 0x04
-    value = m.Bytes(condition=lambda s: s.header.status == Status.OK)
+    value = m.Varbytes(condition=lambda s: s.header.status == Status.OK)
 
 
 class PutIfAbsentRequest(PutRequest):
@@ -136,7 +136,7 @@ class PutIfAbsentRequest(PutRequest):
 
 class PutIfAbsentResponse(Response):
     OP_CODE = 0x06
-    prev_value = m.Bytes(
+    prev_value = m.Varbytes(
         condition=lambda s: s.header.status == Status.FAIL_WITH_VALUE)
 
 
@@ -158,22 +158,33 @@ class PingResponse(Response):
 
 class RemoveRequest(Request):
     OP_CODE = 0x0B
-    key = m.Bytes()
+    key = m.Varbytes()
 
 
 class RemoveResponse(Response):
     OP_CODE = 0x0C
-    prev_value = m.Bytes(
+    prev_value = m.Varbytes(
         condition=lambda s: s.header.status == Status.OK_WITH_VALUE)
 
 
 class ContainsKeyRequest(Request):
     OP_CODE = 0x0F
-    key = m.Bytes()
+    key = m.Varbytes()
 
 
 class ContainsKeyResponse(Response):
     OP_CODE = 0x10
+
+
+class GetWithVersionRequest(Request):
+    OP_CODE = 0x11
+    key = m.Varbytes()
+
+
+class GetWithVersionResponse(Response):
+    OP_CODE = 0x12
+    version = m.Bytes(8, condition=lambda s: s.header.status == Status.OK)
+    value = m.Varbytes(condition=lambda s: s.header.status == Status.OK)
 
 
 class ErrorResponse(Response):

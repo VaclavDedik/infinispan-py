@@ -16,6 +16,7 @@ class DataType(object):
         self._created = CreatedCounter.count()
         for key, value in kwargs.items():
             setattr(self, key, value)
+        self.args = []
 
     @property
     def type(self):
@@ -61,6 +62,12 @@ class Byte(DataType):
 
 
 class Bytes(DataType):
+    def __init__(self, size, **kwargs):
+        super(Bytes, self).__init__(**kwargs)
+        self.args.append(size)
+
+
+class Varbytes(DataType):
     pass
 
 

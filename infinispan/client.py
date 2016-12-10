@@ -90,6 +90,20 @@ class Infinispan(object):
         return self.val_serial.deserialize(resp.value)
 
     @sync_op
+    def get_with_version(self, key):
+        """Sends a request to Infinispan server asking for a value with version
+        by key.
+
+        :param key: Key with version associated with the value you want to
+                    retrieve.
+        :return: Tuple of a value associated with the key and its version if
+                 key exists, tuple of :obj:`None` otherwise.
+        """
+        req = hotrod.GetWithVersionRequest(key=self.key_serial.serialize(key))
+        resp = self._send(req)
+        return self.val_serial.deserialize(resp.value), resp.version
+
+    @sync_op
     def put(self, key, value, lifespan=None, max_idle=None, previous=False):
         """Creates new key-value pair on the Infinispan server.
 
