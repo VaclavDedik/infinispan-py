@@ -93,6 +93,26 @@ class TestClientStandalone(object):
 
         assert result == "value2"
 
+    def test_replace_when_absent(self, client):
+        result = client.replace("absent_key3", "value")
+
+        assert result is False
+
+    def test_replace_when_not_absent(self, client):
+        result = client.replace("key1", "value4")
+
+        assert result is True
+
+    def test_replace_when_absent_force_previous_value(self, client):
+        result = client.replace("absent_key3", "value2", previous=True)
+
+        assert result is None
+
+    def test_replace_when_not_absent_force_previous_value(self, client):
+        result = client.replace("key1", "value5", previous=True)
+
+        assert result == "value4"
+
     def test_remove(self, client):
         result = client.remove("key1")
 

@@ -31,3 +31,13 @@ def from_pretty_time(time):
 
     duration, unit = int(groups[0]), UNIT_CONVERSION_DICT[groups[1]]
     return duration, unit
+
+
+def get_all_subclasses(cls):
+    all_subclasses = []
+
+    for subclass in cls.__subclasses__():
+        all_subclasses.append(subclass)
+        all_subclasses.extend(get_all_subclasses(subclass))
+
+    return all_subclasses

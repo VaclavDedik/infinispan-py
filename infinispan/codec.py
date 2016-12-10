@@ -4,7 +4,7 @@ import struct
 
 from builtins import bytes
 
-import infinispan
+import infinispan as ispn
 
 from infinispan import error
 
@@ -103,6 +103,8 @@ class Encoder(object):
 
 
 class Decoder(object):
+    _OPS = None
+
     def __init__(self, byte_gen=None):
         self._byte_gen = byte_gen
 
@@ -113,16 +115,17 @@ class Decoder(object):
         :return: Response object.
         """
 
-        rh = infinispan.hotrod.ResponseHeader()
+        rh = ispn.hotrod.ResponseHeader()
         self._byte_gen = data
         self._decode(rh)
 
-        response = None
-        for resp_cls in infinispan.hotrod.Response.__subclasses__():
-            if hasattr(resp_cls, 'OP_CODE') and resp_cls.OP_CODE == rh.op:
-                response = resp_cls(header=rh)
-
-        if response is None:
+        # if ops map not yet initialized, init it (can't be done statically)
+        if not self._OPS:
+            self._OPS = {r.OP_CODE: r for r in ispn.utils.get_all_subclasses(
+                         ispn.hotrod.Response) if hasattr(r, 'OP_CODE')}
+        try:
+            response = self._OPS[rh.op](header=rh)
+        except KeyError:
             raise error.DecodeError(
                 "Response operation with code %s is not supported.", rh.op)
         self._decode(response, skip_fields=1)

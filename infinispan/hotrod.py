@@ -128,6 +128,10 @@ class PutIfAbsentRequest(PutRequest):
     OP_CODE = 0x05
 
 
+class ReplaceRequest(PutRequest):
+    OP_CODE = 0x07
+
+
 class PutResponse(Response):
     OP_CODE = 0x02
     prev_value = m.Bytes(
@@ -138,6 +142,10 @@ class PutIfAbsentResponse(Response):
     OP_CODE = 0x06
     prev_value = m.Bytes(
         condition=lambda s: s.header.status == Status.FAIL_WITH_VALUE)
+
+
+class ReplaceResponse(PutResponse):
+    OP_CODE = 0x08
 
 
 class PingRequest(Request):
