@@ -103,16 +103,6 @@ class Response(m.Message):
         self.header.op = self.OP_CODE
 
 
-class GetRequest(Request):
-    OP_CODE = 0x03
-    key = m.Bytes()
-
-
-class GetResponse(Response):
-    OP_CODE = 0x04
-    value = m.Bytes(condition=lambda s: s.header.status == Status.OK)
-
-
 class PutRequest(Request):
     OP_CODE = 0x01
     key = m.Bytes()
@@ -124,24 +114,34 @@ class PutRequest(Request):
     value = m.Bytes()
 
 
-class PutIfAbsentRequest(PutRequest):
-    OP_CODE = 0x05
-
-
-class ReplaceRequest(PutRequest):
-    OP_CODE = 0x07
-
-
 class PutResponse(Response):
     OP_CODE = 0x02
     prev_value = m.Bytes(
         condition=lambda s: s.header.status == Status.OK_WITH_VALUE)
 
 
+class GetRequest(Request):
+    OP_CODE = 0x03
+    key = m.Bytes()
+
+
+class GetResponse(Response):
+    OP_CODE = 0x04
+    value = m.Bytes(condition=lambda s: s.header.status == Status.OK)
+
+
+class PutIfAbsentRequest(PutRequest):
+    OP_CODE = 0x05
+
+
 class PutIfAbsentResponse(Response):
     OP_CODE = 0x06
     prev_value = m.Bytes(
         condition=lambda s: s.header.status == Status.FAIL_WITH_VALUE)
+
+
+class ReplaceRequest(PutRequest):
+    OP_CODE = 0x07
 
 
 class ReplaceResponse(PutResponse):
@@ -154,11 +154,6 @@ class PingRequest(Request):
 
 class PingResponse(Response):
     OP_CODE = 0x18
-
-
-class ErrorResponse(Response):
-    OP_CODE = 0x50
-    error_message = m.String()
 
 
 class RemoveRequest(Request):
@@ -179,6 +174,11 @@ class ContainsKeyRequest(Request):
 
 class ContainsKeyResponse(Response):
     OP_CODE = 0x10
+
+
+class ErrorResponse(Response):
+    OP_CODE = 0x50
+    error_message = m.String()
 
 
 class Protocol(object):
