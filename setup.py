@@ -17,8 +17,8 @@ setup(
     license='MIT',
     packages=['infinispan'],
     install_requires=[
-        'future',
-        'futures',
-        'jsonpickle'
+        'future', #==0.16.0
+        'futures', #==3.0.5
+        'jsonpickle' #==0.9.3
     ]
 )
