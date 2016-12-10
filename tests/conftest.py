@@ -1,6 +1,17 @@
 # -*- coding: utf-8 -*-
 
 import pytest  # noqa
+import logging
+
+
+# Set up logging for tests
+formatter = logging.Formatter(
+    '%(asctime)s %(levelname)s  [%(name)s] (%(threadName)s): %(message)s')
+logger = logging.getLogger()
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.DEBUG)
 
 
 def pytest_addoption(parser):

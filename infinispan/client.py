@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import threading
+import logging
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -11,6 +12,8 @@ from infinispan import utils
 from infinispan import serial
 from infinispan.async import generate_async, sync_op
 from infinispan.hotrod import Status, Flag, ClientIntelligence
+
+log = logging.getLogger(__name__)
 
 
 @generate_async
@@ -53,6 +56,11 @@ class Infinispan(object):
         :param pool_size: Determines the thread pool size that is used for
                           async operations.
         """
+
+        log.info("Initializing client with host=%r, port=%r, timeout=%r, "
+                 "cache_name=%r, key_serial=%r, val_serial=%r, pool_size=%r",
+                 host, port, timeout, cache_name, key_serial, val_serial,
+                 pool_size)
 
         self.conn_type = connection.SocketConnection
         conn = connection.ConnectionPool(connections=[
@@ -174,17 +182,24 @@ class Infinispan(object):
         if not self.protocol.conn.connected:
             self.connect()
 
+        log.debug("Sending request of type %s", req.__class__.__name__)
+
         req.header.cname = self.cache_name
         req.header.ci = self.ci
         req.header.t_id = self._curr_topology_id
         resp = self.protocol.send(req)
 
+        log.debug("Received response of type %s", resp.__class__.__name__)
+
         # Test if not an error response
         if isinstance(resp, hotrod.ErrorResponse):
+            log.error("Retrieved error response with message '%s'",
+                      resp.error_message)
             raise error.ClientError(resp.error_message, resp)
 
         # Test if topology changed:
         if resp.header.tcm:
+            log.info("Topology changed, updating.")
             self._handle_topology_change(resp)
 
         return resp

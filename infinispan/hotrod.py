@@ -2,12 +2,15 @@
 
 import time
 import threading
+import logging
 
 from collections import OrderedDict
 
 from infinispan import messenger as m
 from infinispan import codec
 from infinispan import error
+
+log = logging.getLogger(__name__)
 
 
 class ClientIntelligence(object):
@@ -192,10 +195,15 @@ class Protocol(object):
 
         # send request and wait until received the correct response
         with self.conn.context() as ctx:
+            log.debug("Sending request id=%r encoded as %r to %s",
+                      req_id, encoded_request, ctx)
             ctx.send(encoded_request)
+            # receive and decode
             data = ctx.recv()
             decoder = self._decoder_f.get()
             response = decoder.decode(data)
+            log.debug("Received response id=%r from %s",
+                      response.header.id, ctx)
             self._cache_resp(response)
 
         mustend = time.time() + self.timeout
@@ -203,10 +211,13 @@ class Protocol(object):
             # if there is an error response in the cache, raise an error
             err_resp = self._pop_resp(0)
             if err_resp:
+                log.error("Received server error without id, message: %s",
+                          err_resp.error_message)
                 raise error.ServerError(err_resp.error_message, err_resp)
 
             time.sleep(0.005)
             if time.time() > mustend:
+                log.error("Timeout waiting on response with id=%r", req_id)
                 raise error.ConnectionError("Timeout.")
         return self._pop_resp(req_id)
 

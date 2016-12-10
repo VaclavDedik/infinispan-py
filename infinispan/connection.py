@@ -111,6 +111,9 @@ class SocketConnection(object):
     def __ne__(self, other):
         return not(self == other)
 
+    def __str__(self):
+        return "%s:%s" % (self.host, self.port)
+
 
 class ConnectionPool(object):
     def __init__(self, connections=None):
