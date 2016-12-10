@@ -36,6 +36,7 @@ class Status(object):
     ACTION_FAILED = 0x01
     KEY_DOES_NOT_EXISTS = 0x02
     OK_WITH_VALUE = 0x03
+    FAIL_WITH_VALUE = 0x04
     OK_COMP_ENABLED = 0x06
     OK_PREV_VAL_COMP_ENABLED = 0x07
     NOT_EXEC_PREV_VAL_COMP_ENABLED = 0x08
@@ -123,10 +124,20 @@ class PutRequest(Request):
     value = m.Bytes()
 
 
+class PutIfAbsentRequest(PutRequest):
+    OP_CODE = 0x05
+
+
 class PutResponse(Response):
     OP_CODE = 0x02
     prev_value = m.Bytes(
         condition=lambda s: s.header.status == Status.OK_WITH_VALUE)
+
+
+class PutIfAbsentResponse(Response):
+    OP_CODE = 0x06
+    prev_value = m.Bytes(
+        condition=lambda s: s.header.status == Status.FAIL_WITH_VALUE)
 
 
 class PingRequest(Request):

@@ -73,6 +73,26 @@ class TestClientStandalone(object):
 
         assert result == "value1"
 
+    def test_put_if_absent_when_absent(self, client):
+        result = client.put_if_absent("absent_key", "value")
+
+        assert result is True
+
+    def test_put_if_absent_when_not_absent(self, client):
+        result = client.put_if_absent("key1", "value3")
+
+        assert result is False
+
+    def test_put_if_absent_when_absent_force_previous_value(self, client):
+        result = client.put_if_absent("absent_key2", "value2", previous=True)
+
+        assert result is None
+
+    def test_put_if_absent_when_not_absent_force_previous_value(self, client):
+        result = client.put_if_absent("key1", "value3", previous=True)
+
+        assert result == "value2"
+
     def test_remove(self, client):
         result = client.remove("key1")
 

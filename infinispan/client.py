@@ -116,15 +116,41 @@ class Infinispan(object):
             key=self.key_serial.serialize(key),
             value=self.val_serial.serialize(value))
 
-        if lifespan:
-            req.lifespan, req.tunits[0] = utils.from_pretty_time(lifespan)
-        if max_idle:
-            req.max_idle, req.tunits[1] = utils.from_pretty_time(max_idle)
-        if previous:
-            req.header.flags |= Flag.FORCE_RETURN_VALUE
+        self._set_ephemeral_props(req, lifespan, max_idle)
+        self._set_flags(req, previous=previous)
 
         resp = self._send(req)
         return self.val_serial.deserialize(resp.prev_value)
+
+    @sync_op
+    def put_if_absent(self, key, value, lifespan=None, max_idle=None,
+                      previous=False):
+        """Creates new key-value pair on the Infinispan server if absent.
+
+        :param key: Key to be associated with a value.
+        :param value: Value to be associated with the key.
+        :param lifespan: How long should the key-value pair be stored on the
+                         server. See :meth:`put` for detials.
+        :param max_idle: How long can this key-value pair be idle (no clients
+                         requests for it) before it is removed from the server.
+                         See :meth:`put for details`.
+        :param previous: Force return of previously stored value under the key.
+        :return: :obj:`True` if key absent, :obj:`False` otherwise.
+                 If previous value forced, returns :obj:`None` if key absent,
+                 previous value otherwise.
+        """
+        req = hotrod.PutIfAbsentRequest(
+            key=self.key_serial.serialize(key),
+            value=self.val_serial.serialize(value))
+
+        self._set_ephemeral_props(req, lifespan, max_idle)
+        self._set_flags(req, previous=previous)
+
+        resp = self._send(req)
+        if previous:
+            return self.val_serial.deserialize(resp.prev_value)
+        else:
+            return resp.header.status == Status.OK
 
     @sync_op
     def contains_key(self, key):
@@ -212,6 +238,19 @@ class Infinispan(object):
                                         timeout=self.protocol.timeout)
                          for host in response.header.tc.hosts]
                 self.protocol.conn.update(conns)
+
+    def _set_ephemeral_props(self, req, lifespan=None, max_idle=None):
+        if lifespan:
+            req.lifespan, req.tunits[0] = utils.from_pretty_time(lifespan)
+        if max_idle:
+            req.max_idle, req.tunits[1] = utils.from_pretty_time(max_idle)
+
+    def _set_flags(self, req, flags=None, previous=False):
+        flags = set([]) if flags is None else flags
+        if previous:
+            flags.add(Flag.FORCE_RETURN_VALUE)
+        for flag in flags:
+            req.header.flags |= flag
 
     def __enter__(self):
         self.connect()
