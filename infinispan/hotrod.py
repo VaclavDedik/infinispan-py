@@ -188,6 +188,19 @@ class RemoveResponse(Response):
         condition=lambda s: s.header.status == Status.OK_WITH_VALUE)
 
 
+class RemoveIfUnmodifiedRequest(Request):
+    OP_CODE = 0x0D
+    key = m.Varbytes()
+    version = m.Bytes(8)
+
+
+class RemoveIfUnmodifiedResponse(Response):
+    OP_CODE = 0x0E
+    prev_value = m.Varbytes(
+        condition=lambda s:
+            s.header.status in [Status.OK_WITH_VALUE, Status.FAIL_WITH_VALUE])
+
+
 class ContainsKeyRequest(Request):
     OP_CODE = 0x0F
     key = m.Varbytes()

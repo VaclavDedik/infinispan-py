@@ -185,7 +185,38 @@ class TestClientStandalone(object):
 
         assert result == "value1"
 
+    def test_remove_with_version_when_version_matches(self, client):
+        client.put("key1", "value1")
+        _, version = client.get_with_version("key1")
+        result = client.remove_with_version("key1", version)
+
+        assert result is True
+
+    def test_remove_with_version_when_version_matches_force_prev_value(
+            self, client):
+        client.put("key1", "value1")
+        _, version = client.get_with_version("key1")
+        result = client.remove_with_version("key1", version, previous=True)
+
+        assert result == "value1"
+
+    def test_remove_with_version_when_version_doesnt_match(self, client):
+        client.put("key1", "value1")
+        non_existing_version = b'\x00\x00\x00\x00\x00\x00\x00\xff'
+        result = client.remove_with_version("key1", non_existing_version)
+
+        assert result is False
+
+    def test_remove_with_version_when_version_doesnt_match_force_prev_value(
+            self, client):
+        non_existing_version = b'\x00\x00\x00\x00\x00\x00\x00\xff'
+        result = client.remove_with_version(
+            "key1", non_existing_version, previous=True)
+
+        assert result == "value1"
+
     def test_contains_key(self, client):
+        client.remove("key1")
         assert client.contains_key("key1") is False
         client.put("key1", "value1")
         assert client.contains_key("key1") is True

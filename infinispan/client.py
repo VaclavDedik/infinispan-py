@@ -208,7 +208,8 @@ class Infinispan(object):
         :param previous: Force return of previously stored value under the key.
         :return: :obj:`True` if key replaced, :obj:`False` otherwise.
                  If previous value forced, returns previous value if key
-                 replaced, :obj:`None` otherwise.
+                 replaced or version doesn't match the one stored on the
+                 server, :obj:`None` otherwise.
         """
         req = hotrod.ReplaceIfUnmodifiedRequest(
             key=self.key_serial.serialize(key),
@@ -245,6 +246,28 @@ class Infinispan(object):
 
         resp = self._send(req, previous=previous)
         return self.val_serial.deserialize(resp.prev_value)
+
+    @op
+    def remove_with_version(self, key, version, previous=False):
+        """Removes key and it's associated value from the server if the version
+        matches what is stored on the server.
+
+        :param key: Key you want to remove.
+        :param version: Version of the key you want to remove.
+        :param previous: Force return of previously stored value under the key.
+        :return: :obj:`True` if successfully removed, :obj:`False` otherwise.
+                 If previous value forced, returns previous value if key
+                 removed or version doesn't match the one stored on the server,
+                 :obj:`None` otherwise.
+        """
+        req = hotrod.RemoveIfUnmodifiedRequest(
+            key=self.key_serial.serialize(key), version=version)
+
+        resp = self._send(req, previous=previous)
+        if previous:
+            return self.val_serial.deserialize(resp.prev_value)
+        else:
+            return resp.header.status == Status.OK
 
     @op
     def ping(self):
