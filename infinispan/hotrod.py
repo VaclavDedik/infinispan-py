@@ -144,8 +144,29 @@ class ReplaceRequest(PutRequest):
     OP_CODE = 0x07
 
 
-class ReplaceResponse(PutResponse):
+class ReplaceResponse(Response):
     OP_CODE = 0x08
+    prev_value = m.Varbytes(
+        condition=lambda s: s.header.status == Status.OK_WITH_VALUE)
+
+
+class ReplaceIfUnmodifiedRequest(Request):
+    OP_CODE = 0x09
+    key = m.Varbytes()
+    tunits = m.SplitByte(default=[TimeUnits.DEFAULT, TimeUnits.DEFAULT])
+    lifespan = m.Uvarint(default=10, condition=lambda s: s.tunits[0] not in
+                         [TimeUnits.DEFAULT, TimeUnits.INFINITE])
+    max_idle = m.Uvarint(default=10, condition=lambda s: s.tunits[1] not in
+                         [TimeUnits.DEFAULT, TimeUnits.INFINITE])
+    version = m.Bytes(8)
+    value = m.Varbytes()
+
+
+class ReplaceIfUnmodifiedResponse(Response):
+    OP_CODE = 0x0A
+    prev_value = m.Varbytes(
+        condition=lambda s:
+            s.header.status in[Status.OK_WITH_VALUE, Status.FAIL_WITH_VALUE])
 
 
 class PingRequest(Request):

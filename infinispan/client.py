@@ -191,6 +191,38 @@ class Infinispan(object):
             return resp.header.status == Status.OK
 
     @op
+    def replace_with_version(self, key, value, version, lifespan=None,
+                             max_idle=None, previous=False):
+        """Replaces existing key-value pair on the Infinispan server if absent
+        and the version matches what is stored on the server.
+
+        :param key: Key to be replaced.
+        :param value: Value to be replaced.
+        :param version: Version of the key-value pair obtained with e.g.
+                        :meth:`get_with_version`.
+        :param lifespan: How long should the key-value pair be stored on the
+                         server. See :meth:`put` for detials.
+        :param max_idle: How long can this key-value pair be idle (no clients
+                         requests for it) before it is removed from the server.
+                         See :meth:`put for details`.
+        :param previous: Force return of previously stored value under the key.
+        :return: :obj:`True` if key replaced, :obj:`False` otherwise.
+                 If previous value forced, returns previous value if key
+                 replaced, :obj:`None` otherwise.
+        """
+        req = hotrod.ReplaceIfUnmodifiedRequest(
+            key=self.key_serial.serialize(key),
+            value=self.val_serial.serialize(value),
+            version=version)
+
+        resp = self._send(req, lifespan=lifespan, max_idle=max_idle,
+                          previous=previous)
+        if previous:
+            return self.val_serial.deserialize(resp.prev_value)
+        else:
+            return resp.header.status == Status.OK
+
+    @op
     def contains_key(self, key):
         """Returns whether the key is stored on the server.
 

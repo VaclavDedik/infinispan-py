@@ -130,6 +130,50 @@ class TestClientStandalone(object):
 
         assert result == "value4"
 
+    def test_replace_with_version_when_version_matches(self, client):
+        _, version = client.get_with_version("key1")
+        result = client.replace_with_version("key1", "value6", version)
+
+        assert result is True
+
+    def test_replace_with_version_when_version_doesnt_match(self, client):
+        result = client.replace_with_version(
+            "key1", "value7", b'\x00\x00\x00\x00\x00\x00\x00\xff')
+
+        assert result is False
+
+    def test_replace_with_version_when_absent(
+            self, client):
+        non_existing_version = b'\x00\x00\x00\x00\x00\x00\x00\xff'
+        result = client.replace_with_version(
+            "absent_key1", "value1", non_existing_version)
+
+        assert result is False
+
+    def test_replace_with_version_when_version_matches_force_prev_value(
+            self, client):
+        _, version = client.get_with_version("key1")
+        result = client.replace_with_version(
+            "key1", "value7", version, previous=True)
+
+        assert result == "value6"
+
+    def test_replace_with_version_when_version_doesnt_match_force_prev_value(
+            self, client):
+        non_existing_version = b'\x00\x00\x00\x00\x00\x00\x00\xff'
+        result = client.replace_with_version(
+            "key1", "value8", non_existing_version, previous=True)
+
+        assert result == "value7"
+
+    def test_replace_with_version_when_absent_force_prev_value(
+            self, client):
+        non_existing_version = b'\x00\x00\x00\x00\x00\x00\x00\xff'
+        result = client.replace_with_version(
+            "absent_key1", "value1", non_existing_version, previous=True)
+
+        assert result is None
+
     def test_remove(self, client):
         result = client.remove("key1")
 
