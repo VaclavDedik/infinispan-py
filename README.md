@@ -22,8 +22,8 @@ from infinispan import Infinispan
 
 with Infinispan(host='127.0.0.1', port=11222) as client:
     client.put("key1", "value1")
-    version, version = client.get_with_version("key1")
-    prev_val = client.replace_with_version("key1", version, lifespan='1d', previous=True)
+    value, version = client.get_with_version("key1")
+    prev_val = client.replace_with_version("key1", value, version, lifespan='1d', previous=True)
     stats_f = client.stats_async()
     # ...
     print prev_val
