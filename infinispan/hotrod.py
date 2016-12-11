@@ -169,14 +169,6 @@ class ReplaceIfUnmodifiedResponse(Response):
             s.header.status in[Status.OK_WITH_VALUE, Status.FAIL_WITH_VALUE])
 
 
-class PingRequest(Request):
-    OP_CODE = 0x17
-
-
-class PingResponse(Response):
-    OP_CODE = 0x18
-
-
 class RemoveRequest(Request):
     OP_CODE = 0x0B
     key = m.Varbytes()
@@ -227,6 +219,29 @@ class ClearRequest(Request):
 
 class ClearResponse(Response):
     OP_CODE = 0x14
+
+
+class StatsRequest(Request):
+    OP_CODE = 0x15
+
+
+class Stat(m.Message):
+    name = m.String()
+    value = m.String()
+
+
+class StatsResponse(Response):
+    OP_CODE = 0x16
+    n = m.Uvarint()
+    stats = m.List(of=Stat, size=lambda s: s.n)
+
+
+class PingRequest(Request):
+    OP_CODE = 0x17
+
+
+class PingResponse(Response):
+    OP_CODE = 0x18
 
 
 class ErrorResponse(Response):

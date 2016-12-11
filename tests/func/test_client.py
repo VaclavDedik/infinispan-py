@@ -263,6 +263,11 @@ class TestClientStandalone(object):
         assert f.result() is True
         assert client.get("test_async") == "value"
 
+    def test_stats(self, client):
+        result = client.stats()
+
+        assert "stores" in result
+
     def test_clear(self, client):
         client.put("key1", "value1")
         client.put("key2", "value2")

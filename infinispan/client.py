@@ -278,6 +278,18 @@ class Infinispan(object):
         resp = self._send(req)
         return resp.header.status == Status.OK
 
+    @op
+    def stats(self):
+        """Returns statistics from the infinispan server.
+
+        :return: Dictionary of names of the statistic as key and value of the
+                 statistic as value.
+        """
+
+        req = hotrod.StatsRequest()
+        resp = self._send(req)
+        return {stat.name: stat.value for stat in resp.stats}
+
     def connect(self):
         """Establishes connection with the server. If connection is already
         open, does not do anything."""
