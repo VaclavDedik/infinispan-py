@@ -34,7 +34,7 @@ class TestClientStandalone(object):
     def test_put(self, client):
         result = client.put("key1", "value1")
 
-        assert result is None
+        assert result is True
 
     def test_get(self, client):
         value = client.get("key1")
@@ -60,7 +60,7 @@ class TestClientStandalone(object):
 
     def test_put_with_lifespan(self, client):
         result = client.put("key2", "value2", lifespan='2s')
-        assert result is None
+        assert result is True
 
         value = client.get("key2")
         assert value == "value2"
@@ -71,7 +71,7 @@ class TestClientStandalone(object):
 
     def test_put_with_max_idle(self, client):
         result = client.put("key3", "value3", max_idle='2s')
-        assert result is None
+        assert result is True
 
         time.sleep(1)
         value = client.get("key3")
@@ -89,6 +89,11 @@ class TestClientStandalone(object):
         result = client.put("key1", "value2", previous=True)
 
         assert result == "value1"
+
+    def test_put_when_absent_with_force_previous_value(self, client):
+        result = client.put("key1_absent_until_now", "value2", previous=True)
+
+        assert result is None
 
     def test_put_if_absent_when_absent(self, client):
         result = client.put_if_absent("absent_key", "value")
@@ -177,13 +182,23 @@ class TestClientStandalone(object):
     def test_remove(self, client):
         result = client.remove("key1")
 
-        assert result is None
+        assert result is True
+
+    def test_remove_when_absent(self, client):
+        result = client.remove("absent_key1")
+
+        assert result is False
 
     def test_remove_with_force_previous_value(self, client):
         client.put("key1", "value1")
         result = client.remove("key1", previous=True)
 
         assert result == "value1"
+
+    def test_remove_when_absent_with_force_previous_value(self, client):
+        result = client.remove("absent_key1", previous=True)
+
+        assert result is None
 
     def test_remove_with_version_when_version_matches(self, client):
         client.put("key1", "value1")
@@ -227,7 +242,7 @@ class TestClientStandalone(object):
         value2 = client.get("key2")
         value1 = client.get("key1")
 
-        assert result is None
+        assert result is True
         assert value2 == "value2"
         assert value1 is None
 
@@ -245,7 +260,7 @@ class TestClientStandalone(object):
         f = client.put_async("test_async", "value")
         assert f.done() is False
 
-        assert f.result() is None
+        assert f.result() is True
         assert client.get("test_async") == "value"
 
 

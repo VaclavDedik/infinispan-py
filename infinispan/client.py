@@ -124,7 +124,8 @@ class Infinispan(object):
                          For the accepted format and default value,
                          see :attr:`lifespan`.
         :param previous: Force return of previously stored value under the key.
-        :return: :obj:`None` unless previous value forced.
+        :return: :obj:`True` if put successful. If previous value forced,
+                 returns previous value if key exists, :obj:`None` otherwise.
         """
         req = hotrod.PutRequest(
             key=self.key_serial.serialize(key),
@@ -132,7 +133,7 @@ class Infinispan(object):
 
         resp = self._send(req, lifespan=lifespan, max_idle=max_idle,
                           previous=previous)
-        return self.val_serial.deserialize(resp.prev_value)
+        return self._return_is_ok_or_prev_val(resp, previous=previous)
 
     @op
     def put_if_absent(self, key, value, lifespan=None, max_idle=None,
@@ -157,10 +158,7 @@ class Infinispan(object):
 
         resp = self._send(req, lifespan=lifespan, max_idle=max_idle,
                           previous=previous)
-        if previous:
-            return self.val_serial.deserialize(resp.prev_value)
-        else:
-            return resp.header.status == Status.OK
+        return self._return_is_ok_or_prev_val(resp, previous=previous)
 
     @op
     def replace(self, key, value, lifespan=None, max_idle=None,
@@ -185,10 +183,7 @@ class Infinispan(object):
 
         resp = self._send(req, lifespan=lifespan, max_idle=max_idle,
                           previous=previous)
-        if previous:
-            return self.val_serial.deserialize(resp.prev_value)
-        else:
-            return resp.header.status == Status.OK
+        return self._return_is_ok_or_prev_val(resp, previous=previous)
 
     @op
     def replace_with_version(self, key, value, version, lifespan=None,
@@ -218,10 +213,7 @@ class Infinispan(object):
 
         resp = self._send(req, lifespan=lifespan, max_idle=max_idle,
                           previous=previous)
-        if previous:
-            return self.val_serial.deserialize(resp.prev_value)
-        else:
-            return resp.header.status == Status.OK
+        return self._return_is_ok_or_prev_val(resp, previous=previous)
 
     @op
     def contains_key(self, key):
@@ -240,12 +232,14 @@ class Infinispan(object):
 
         :param key: Key you want to remove.
         :param previous: Force return of previously stored value under the key.
-        :return: :obj:`None` unless previous value forced.
+        :return: :obj:`True` if successfully removed, :obj:`False` otherwise.
+                 If previous value forced, return previous value if key exists,
+                 :obj:`None` otherwise.
         """
         req = hotrod.RemoveRequest(key=self.key_serial.serialize(key))
 
         resp = self._send(req, previous=previous)
-        return self.val_serial.deserialize(resp.prev_value)
+        return self._return_is_ok_or_prev_val(resp, previous=previous)
 
     @op
     def remove_with_version(self, key, version, previous=False):
@@ -264,10 +258,7 @@ class Infinispan(object):
             key=self.key_serial.serialize(key), version=version)
 
         resp = self._send(req, previous=previous)
-        if previous:
-            return self.val_serial.deserialize(resp.prev_value)
-        else:
-            return resp.header.status == Status.OK
+        return self._return_is_ok_or_prev_val(resp, previous=previous)
 
     @op
     def ping(self):
@@ -337,6 +328,12 @@ class Infinispan(object):
             req.lifespan, req.tunits[0] = utils.from_pretty_time(lifespan)
         if max_idle:
             req.max_idle, req.tunits[1] = utils.from_pretty_time(max_idle)
+
+    def _return_is_ok_or_prev_val(self, resp, previous=False):
+        if previous:
+            return self.val_serial.deserialize(resp.prev_value)
+        else:
+            return resp.header.status == Status.OK
 
     def _set_flags(self, req, flags=None, previous=False):
         flags = set([]) if flags is None else flags
