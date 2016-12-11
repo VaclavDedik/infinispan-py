@@ -269,6 +269,15 @@ class Infinispan(object):
         resp = self._send(req)
         return resp.header.status == Status.OK
 
+    @op
+    def clear(self):
+        """Clears cache.
+
+        :return: :obj:`True` if success."""
+        req = hotrod.ClearRequest()
+        resp = self._send(req)
+        return resp.header.status == Status.OK
+
     def connect(self):
         """Establishes connection with the server. If connection is already
         open, does not do anything."""

@@ -263,6 +263,15 @@ class TestClientStandalone(object):
         assert f.result() is True
         assert client.get("test_async") == "value"
 
+    def test_clear(self, client):
+        client.put("key1", "value1")
+        client.put("key2", "value2")
+
+        result = client.clear()
+        assert result is True
+        assert client.get("key1") is None
+        assert client.get("key2") is None
+
 
 class TestClientDomain(object):
     @classmethod

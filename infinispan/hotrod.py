@@ -221,6 +221,14 @@ class GetWithVersionResponse(Response):
     value = m.Varbytes(condition=lambda s: s.header.status == Status.OK)
 
 
+class ClearRequest(Request):
+    OP_CODE = 0x13
+
+
+class ClearResponse(Response):
+    OP_CODE = 0x14
+
+
 class ErrorResponse(Response):
     OP_CODE = 0x50
     error_message = m.String()
