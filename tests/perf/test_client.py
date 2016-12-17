@@ -66,11 +66,10 @@ class TestClientWithMockConnection(object):
         conn.send = send
 
         def recv():
-            time.sleep(0.002)
+            time.sleep(0.003)
             r = b'\xa1' + conn._ids.popleft() + b'\x18\x00\x00'
             result = iter(r)
             while True:
-                time.sleep(0.0001)
                 yield struct.pack(">B", next(result))
         conn.recv = recv
 

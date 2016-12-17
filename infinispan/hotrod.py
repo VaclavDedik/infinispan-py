@@ -306,9 +306,10 @@ class Protocol(object):
                       req_id, encoded_request, ctx)
             ctx.send(encoded_request)
             # receive and decode
-            data = ctx.recv()
             decoder = self._decoder_f.get()
-            response = decoder.decode(data)
+            with ctx.lock:
+                data = ctx.recv()
+                response = decoder.decode(data)
             log.debug("Received response id=%r from %s",
                       response.header.id, ctx)
             self._cache_resp(response)

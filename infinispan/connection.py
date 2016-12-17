@@ -14,7 +14,7 @@ class SocketConnection(object):
         self.port = port
         self.timeout = timeout
         self._s = None
-        self._lock = threading.Lock()
+        self.lock = threading.Lock()
 
     def connect(self):
         if self._s:
@@ -41,7 +41,6 @@ class SocketConnection(object):
     def recv(self):
         if not self._s:
             raise error.ConnectionError("Not connected.")
-        self._lock.acquire()
 
         n = 1
         while n != 0:
@@ -56,7 +55,6 @@ class SocketConnection(object):
             n = yield packet
             # must test for None as 0 is termination
             n = n if n is not None else 1
-        self._lock.release()
 
     def disconnect(self):
         if not self._s:
@@ -69,17 +67,13 @@ class SocketConnection(object):
         self._s.close()
         self._s = None
 
-    @contextmanager
-    def context(self):
-        try:
-            yield self
-        finally:
-            if self._lock.locked():
-                self._lock.release()
-
     @property
     def connected(self):
         return self._s is not None
+
+    @contextmanager
+    def context(self):
+        yield self
 
     def _read_packet(self, n):
         packet = None
@@ -154,11 +148,7 @@ class ConnectionPool(object):
     @contextmanager
     def context(self):
         conn = self._get_next()
-        try:
-            yield conn
-        finally:
-            if conn._lock.locked():
-                conn._lock.release()
+        yield conn
 
     def _get_next(self):
         with self._lock:
