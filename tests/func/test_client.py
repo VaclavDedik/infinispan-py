@@ -85,6 +85,33 @@ class TestClientStandalone(object):
         value = client.get("key3")
         assert value is None
 
+    def test_get_with_metadata_infinite(self, client):
+        value, metadata = client.get_with_metadata("key1")
+
+        assert value == "value1"
+        assert "created" not in metadata
+        assert "lifespan" not in metadata
+        assert "last_used" not in metadata
+        assert "max_idle" not in metadata
+        assert metadata["version"] is not None
+
+    def test_get_with_metadata_ephemeral(self, client):
+        client.put("key4", "value4", lifespan='10s', max_idle='2s')
+        value, metadata = client.get_with_metadata("key4")
+
+        assert value == "value4"
+        assert "created" in metadata
+        assert metadata["lifespan"] == 10
+        assert "last_used" in metadata
+        assert metadata["max_idle"] == 2
+        assert metadata["version"] is not None
+
+    def test_get_with_metadata_nonexisting(self, client):
+        value, metadata = client.get_with_metadata("nonexisting_key1")
+
+        assert value is None
+        assert metadata == {}
+
     def test_put_with_force_previous_value(self, client):
         result = client.put("key1", "value2", previous=True)
 

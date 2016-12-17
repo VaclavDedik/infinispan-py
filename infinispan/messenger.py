@@ -89,3 +89,7 @@ class Uvarlong(DataType):
 
 class String(DataType):
     pass
+
+
+class Long(DataType):
+    pass

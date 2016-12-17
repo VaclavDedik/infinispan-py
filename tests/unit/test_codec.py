@@ -84,6 +84,13 @@ class TestEncoder(object):
 
         assert expected == actual
 
+    def test_encode_long(self, encoder):
+        l = 1125899906842624
+        expected = b'\x00\x04\x00\x00\x00\x00\x00\x00'
+        actual = encoder.long(l).result()
+
+        assert expected == actual
+
     def test_encode(self, encoder):
         rh = hotrod.RequestHeader(id=3, op=0x01)
         expected = b'\xa0\x03\x19\x01\x00\x00\x01\x00'
@@ -184,6 +191,13 @@ class TestDecoder(object):
         string = iter('\x06\xc5\x99ahoj')
         expected = u'řahoj'
         actual = codec.Decoder(string).string()
+
+        assert expected == actual
+
+    def test_decode_long(self):
+        l = iter('\x00\x04\x00\x00\x00\x00\x00\x00')
+        expected = 1125899906842624
+        actual = codec.Decoder(l).long()
 
         assert expected == actual
 

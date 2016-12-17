@@ -89,6 +89,10 @@ class Encoder(object):
             self.byte(0x00)
         return self
 
+    def long(self, l):
+        self._append(struct.pack('>q', l))
+        return self
+
     def result(self):
         return self._byte_array
 
@@ -188,6 +192,12 @@ class Decoder(object):
 
     def string(self):
         return self.varbytes().decode('UTF-8')
+
+    def long(self):
+        return (self.byte() << 56) + (self.byte() << 48) + \
+               (self.byte() << 40) + (self.byte() << 32) + \
+               (self.byte() << 24) + (self.byte() << 16) + \
+               (self.byte() << 8) + self.byte()
 
     def _uvar(self, maxlen=5):
         b = self.byte()

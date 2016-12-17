@@ -104,6 +104,24 @@ class Infinispan(object):
         return self.val_serial.deserialize(resp.value), resp.version
 
     @op
+    def get_with_metadata(self, key):
+        """Sends a request to Infinispan server asking for a value with
+        metadata by key.
+
+        :param key: Key with metadata associated with the value you want to
+                    retrieve.
+        :return: Tuple of a value associated with the key and dictionary of
+                 metadata if key exists, tuple of :obj:`None` and empty
+                 dictionary otherwise.
+        """
+        req = hotrod.GetWithMetadataRequest(key=self.key_serial.serialize(key))
+        resp = self._send(req)
+        metadata = {attr: getattr(resp, attr) for attr in [
+            "created", "lifespan", "last_used", "max_idle", "version"]
+            if hasattr(resp, attr) and getattr(resp, attr)}
+        return self.val_serial.deserialize(resp.value), metadata
+
+    @op
     def put(self, key, value, lifespan=None, max_idle=None, previous=False):
         """Creates new key-value pair on the Infinispan server.
 

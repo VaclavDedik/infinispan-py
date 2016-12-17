@@ -244,6 +244,26 @@ class PingResponse(Response):
     OP_CODE = 0x18
 
 
+class GetWithMetadataRequest(Request):
+    OP_CODE = 0x1B
+    key = m.Varbytes()
+
+
+class GetWithMetadataResponse(Response):
+    OP_CODE = 0x1C
+    flag = m.Byte(condition=lambda s: s.header.status == Status.OK)
+    created = m.Long(condition=lambda s:
+                     s.header.status == Status.OK and not(s.flag & 0x01))
+    lifespan = m.Uvarint(condition=lambda s:
+                         s.header.status == Status.OK and not(s.flag & 0x01))
+    last_used = m.Long(condition=lambda s:
+                       s.header.status == Status.OK and not(s.flag & 0x02))
+    max_idle = m.Uvarint(condition=lambda s:
+                         s.header.status == Status.OK and not(s.flag & 0x02))
+    version = m.Bytes(8, condition=lambda s: s.header.status == Status.OK)
+    value = m.Varbytes(condition=lambda s: s.header.status == Status.OK)
+
+
 class ErrorResponse(Response):
     OP_CODE = 0x50
     error_message = m.String()
