@@ -7,7 +7,7 @@
 Python client for Infinispan key-value store. Currently supported features:
 
  * CRUD operations `get`, `put`, `remove`, `contains_key`.
- * Compare-And-Swap operations `put_if_absent`, `replace`, `replace_with_version`, `get_with_version`, `get_with_matadata`.
+ * Compare-And-Swap operations `put_if_absent`, `replace`, `replace_with_version`, `get_with_version`, `get_with_metadata`.
  * Expiration with absolute lifespan or relative maximum idle time. This expiration parameters as passed as optional parameters to create/update methods and they support multiple time units, e.g. `lifespan='1m', max_idle='1d'`.
  * Update and remove operations can optionally return previous values by passing in `previous=True` option.
  * Server-side statistics can be retrieved using the `stats` operation.
